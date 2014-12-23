@@ -1,7 +1,7 @@
-TFF Specification Version 0.1
-=============================
+TFF Specification
+=================
 
-####Hǎiliàng Wáng <w@h12.me>
+Hǎiliàng Wáng <w@h12.me>
 
 Copyright (c) 2014, Hǎiliàng Wáng. All rights reserved.
 
@@ -11,15 +11,14 @@ International License. To view a copy of this license, visit
 
 Introduction
 ------------
-TFF (Test Friendly Format) is a extensible data format with testing purpose in
+TFF (Test Friendly Format) is an extensible data format with testing purpose in
 mind. it is easy to read, compare and write manually.
 
-In general, the format of TFF represents a tree. Each node of the tree is a
-string occupying a single line, and the relation between nodes are represented
-by indent.
+In general, the format of represents a tree. Each node of the tree is a string
+occupying a single line, and the relation between nodes are represented by indents.
 
-This model is simple but extensible. The minimal constraints of TFF imply that
-the resprentation of a node can be easily extended without intefering other nodes.
+This model is simple and extensible. The minimal constraints make it possible to
+extend the resprentation of a data structure without intefering other nodes.
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
@@ -34,7 +33,7 @@ The syntax is specified using a variant of Extended Backus-Naur Form, based on
 which is extended with the following definitions:
 * **EOF** matches the end of the file.
 * **Escape sequences** defined in section [Interpreted string](#interpreted-string).
-* Regular expressions defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/)
+* Regular expressions defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 * Text enclosed by <> is a description.
 
 Core
@@ -43,21 +42,20 @@ A TFF file is a sequence of [Unicode](http://unicode.org/) code points encoded
 in [UTF-8](http://www.unicode.org/versions/Unicode6.2.0/ch03.pdf).
 
 Except \t (U+0009), \n (U+000A) and \r (U+000D), code points less than U+0032 are
-invalid and should not appear in an TFF text.
+invalid and should not appear in a TFF file.
 
     char_visible   ::= [^\x00-\x20]
     char_space     ::= [ \t]
     char_inline    ::= char_visible | char_space
     char_break     ::= [\r\n]
-    char_space     ::= [ \t] | char_break
     char_any       ::= char_inline | char_break
-    leading_space  ::= <one or more 'char_space's at the start of a line>
+    leading_space  ::= <one or more char_space's at the start of a line>
 
 TFF tokens:
 
     inline_comment ::= "#" char_inline* (newline | EOF)
     newline        ::= char_break | "\r\n"
-    string         ::= <one or more consecutive 'char_inline's excluding the leading_space>
+    string         ::= <one or more consecutive char_inline's excluding the leading_space>
     indent         ::= <longer leading_space in this line compared to the previous line>
     unindent       ::= <shorter leading_space in next line compared to this line,
                         multiple unindents may be generated, each of them is to
@@ -95,7 +93,7 @@ TFF can represent a cyclic graph by referenced nodes.
     ref_id          ::= '^' char_visible+
     referenced_node ::= ref_id (indent node unindent)
 
-A cyclic reference id is a unique ID within an TFF file. It should be defined
+A cyclic reference id is a unique ID within a TFF file. It should be defined
 only once but can be referenced multiple times by the reference ID alone.
 
 TFF can (optionally) represent type by using typed nodes.

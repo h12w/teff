@@ -1,5 +1,5 @@
-TFF Specification
-=================
+Specification of Test Friendly Format
+=====================================
 
 Hǎiliàng Wáng <w@h12.me>
 

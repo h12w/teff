@@ -56,8 +56,12 @@ TFF tokens:
     comment      ::= "#" char_inline* (newline | EOF)
     newline      ::= char_break | "\r\n"
     string       ::= <one or more consecutive char_inline's excluding the lead_space>
-    indent       ::= <an indent token is emitted when the length of the lead_space increases in this line compared to the previous line>
-    unindent     ::= <one or more unindent tokens are emitted when the length of the lead_space decreases in this line compared to the previous line. Each of them cancels the last indent, till the indent level becomes the same as the next line>
+    indent       ::= <an indent token is emitted when the length of the lead_space
+                      increases in this line compared to the previous line>
+    unindent     ::= <one or more unindent tokens are emitted when the length of
+                      the lead_space decreases in this line compared to the previous
+                      line. Each of them cancels the last indent, till the indent
+                      level becomes the same as the next line>
 
 A TFF parser only cares about tokens of type 'string', 'indent' and 'unindent'.
 
@@ -68,12 +72,8 @@ A TFF parser only cares about tokens of type 'string', 'indent' and 'unindent'.
 
 Extensions
 ----------
-Core definitions only include tree nodes, however, richer data structures can be
-mapped onto the two primitives.
-
-In this section, format for common types are specified. These types are intended
-to be mapped to builtin types or types in standard libraries, and format of
-these types are fixed and cannot be overriden.
+In this section, format extensions for common types are specified. These types
+should cover all the builtin types and some of the types in standard libraries.
 
 ### Array
 
@@ -83,11 +83,12 @@ An array is represented as a list.
      ↓                 ↓
     array         ::= array_element*
 
-To represent an array of array, the anonymous symbol "_" is introduced.
+To represent an array of array, the anonymous symbol "_" is introduced to
+represent the anonymous parent of a child array.
 
-    node          ::= value (indent list unindent)?
+    node          ::= value (indent list  unindent)?
      ↓                 ↓             ↓
-    array_element ::=  _    indent array unindent
+    array_element ::=  _     indent array unindent
 
 e.g.
 
@@ -107,7 +108,7 @@ as a parent-child relation.
      ↓                 ↓
     map           ::= key_value*
 
-    node          ::= value  (indent list unindent)?
+    node          ::= value  (indent list      unindent)?
      ↓                 ↓              ↓
     key_value     ::= map_key indent map_value unindent
 

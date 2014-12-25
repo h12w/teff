@@ -63,7 +63,7 @@ TFF tokens:
                       line. Each of them cancels the last indent, till the indent
                       level becomes the same as the next line>
 
-A TFF parser only cares about tokens of type 'string', 'indent' and 'unindent'.
+TFF grammar only cares about tokens of type 'string', 'indent' and 'unindent'.
 
     tff_file     ::= list EOF
     list         ::= node*
@@ -79,16 +79,16 @@ should cover all the builtin types and some of the types in standard libraries.
 
 An array is represented as a list.
 
-    list          ::= node*
-     ↓                 ↓
     array         ::= array_element*
+     ↓                 ↓
+    list          ::= node*
 
 To represent an array of array, the anonymous symbol "_" is introduced to
 represent the anonymous parent of a child array.
 
-    node          ::= value (indent list  unindent)?
-     ↓                 ↓             ↓
     array_element ::=  _     indent array unindent
+     ↓                 ↓             ↓
+    node          ::= value (indent list  unindent)?
 
 e.g.
 
@@ -104,13 +104,13 @@ e.g.
 A map is represented with a list of key-value pairs. Each pair is represented
 as a parent-child relation.
 
-    list          ::= node*
-     ↓                 ↓
     map           ::= key_value*
+     ↓                 ↓
+    list          ::= node*
 
-    node          ::= value  (indent list      unindent)?
-     ↓                 ↓              ↓
     key_value     ::= map_key indent map_value unindent
+     ↓                 ↓              ↓
+    node          ::= value  (indent list      unindent)?
 
 Some languages (like Go) support a compound map key like array of struct. It can
 be represented in TFF as long as the key can be encoded into a single line string.
@@ -121,15 +121,19 @@ for languages that do not support compound map key.
 TFF can represent a cyclic graph by referenced nodes.
 
     ref_id          ::= '^' char_visible+
-    referenced_node ::= ref_id (indent node* unindent)
+    referenced_node ::= ref_id  indent list  unindent
+     ↓                   ↓              ↓
+    node            ::= value  (indent list  unindent)?
 
 A cyclic reference id is a unique ID within a TFF file. It should be defined
 only once but can be referenced multiple times by the reference ID alone.
 
 TFF can (optionally) represent type by using typed nodes.
 
-    type            ::= '!' char_visible+
-    typed_node      ::= type (indent node* unindent)
+    type_label      ::= '!' char_visible+
+    typed_node      ::= type_label indent list unindent
+     ↓                   ↓                 ↓
+    node            ::= value     (indent list unindent)?
 
 When both a cyclic reference and a type are defined for a node, it does not
 matter which comes first.
@@ -138,14 +142,18 @@ matter which comes first.
 
 The special string nil is used to represent an uninitialized nullable node.
 
-    nil ::= "nil"
+    nil    ::= "nil"
+     ↓          ↓
+    value  ::= string
 
 ### Interpreted string
 Interpreted string is a double quoted string, that can interpret certain escape
 sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
-    interpreted_string ::= '"' quoted_char* '"'
+    interpreted_string ::= '"' (unicode_value | byte_value)* '"'
+     ↓                      ↓
+    value              ::= string
 
 Escape sequences:
 
@@ -166,6 +174,8 @@ Escape sequences:
 Boolean value is an unquoted string of either true of false.
 
     boolean    ::= "true" | "false"
+     ↓              ↓
+    value      ::= string
 
 ### Numeric value
 Numeric value is an unquoted string that encode a number.
@@ -175,6 +185,8 @@ Numeric value is an unquoted string that encode a number.
 
 #### Integer
     integer    ::= sign? decimals
+     ↓              ↓
+    value      ::= string
 
 #### Float
 Float value is an unquoted string that encode a floating point number:
@@ -184,16 +196,22 @@ Float value is an unquoted string that encode a floating point number:
                    (decimals exponent) |
                    ("." decimals exponent?)
     float      ::= sign? float_base
+     ↓              ↓
+    value      ::= string
 
 #### Complex
     int_float  ::= decimals | float_base
     complex    ::= sign? int_float sign int_float "i"
+     ↓              ↓
+    value      ::= string
 
 ### Date/time
 A date/time value is an unquoted string encoded with
 [RFC3339](http://www.rfc-editor.org/rfc/rfc3339.txt)
 
     date_time  ::= rfc3339_date_time
+     ↓              ↓
+    value      ::= string
 
 e.g.
 
@@ -207,6 +225,8 @@ An IP address is either an IPv4 or IPv6 address.
 An IPv4 address value is an unquoted string encoded with dot-decimal notation:
 
     ipv4       ::= decimals "." decimals "." decimals "." decimals
+     ↓              ↓
+    value      ::= string
 
 e.g.
 
@@ -216,6 +236,8 @@ An IPv6 address value is an unquoted string encoded with
 [RFC5952](http://www.rfc-editor.org/rfc/rfc5952.txt).
 
     ipv6       ::= rfc5952_ipv6_address
+     ↓              ↓
+    value      ::= string
 
 e.g.
 

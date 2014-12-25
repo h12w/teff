@@ -55,15 +55,9 @@ TFF tokens:
 
     comment      ::= "#" char_inline* (newline | EOF)
     newline      ::= char_break | "\r\n"
-    string       ::= <one or more consecutive char_inline's excluding the
-                      lead_space>
-    indent       ::= <an indent token is emitted when the length of the
-                     lead_space increases in this line compared to the previous
-                     line>
-    unindent     ::= <one or more unindent tokens are emitted when the length
-                      of the lead_space decreases in this line compared to the
-                      previous line. Each of them cancels the last indent, till
-                      the indent level becomes the same as the next line>
+    string       ::= <one or more consecutive char_inline's excluding the lead_space>
+    indent       ::= <an indent token is emitted when the length of the lead_space increases in this line compared to the previous line>
+    unindent     ::= <one or more unindent tokens are emitted when the length of the lead_space decreases in this line compared to the previous line. Each of them cancels the last indent, till the indent level becomes the same as the next line>
 
 A TFF parser only cares about tokens of type 'string', 'indent' and 'unindent'.
 

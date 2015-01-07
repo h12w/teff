@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package flow
+package tff
 
 import (
 	"encoding"
@@ -11,11 +11,11 @@ import (
 )
 
 type Marshaler interface {
-	MarshalOGDL() ([]byte, error)
+	MarshalTFF() ([]byte, error)
 }
 
 type Unmarshaler interface {
-	UnmarshalOGDL([]byte) error
+	UnmarshalTFF([]byte) error
 }
 
 type MatchFunc func(v reflect.Value) (*Encoding, bool)
@@ -40,9 +40,9 @@ var (
 
 func init() {
 	matchFuncs = []MatchFunc{
-		matchValue,
 		matchMarshaler,
 		matchTextMarshaler,
+		matchBasic,
 		matchStruct,
 		matchSlice,
 		matchMap,
@@ -50,23 +50,25 @@ func init() {
 	}
 }
 
-func matchValue(v reflect.Value) (*Encoding, bool) {
-	if valueEncoding, ok := typeToValueEncoding[v.Kind()]; ok {
+func matchBasic(v reflect.Value) (*Encoding, bool) {
+	if basicEncoding, ok := kindToBasicEncoding[v.Kind()]; ok {
 		return &Encoding{
-			valueEncoding.ToEncode(v),
-			valueEncoding.ToDecode(v),
+			basicEncoding.ToEncode(v),
+			basicEncoding.ToDecode(v),
 		}, true
 	}
 	return nil, false
 }
 
-func (e ValueEncoding) ToEncode(v reflect.Value) EncodeFunc {
+func (e BasicEncoding) ToEncode(v reflect.Value) EncodeFunc {
 	return func(c Composer) error {
-		return e.Encode(v, c)
+		node := e.Encode(v)
+		c.Write([]byte(node.Value))
+		return nil
 	}
 }
 
-func (e ValueEncoding) ToDecode(v reflect.Value) DecodeFunc {
+func (e BasicEncoding) ToDecode(v reflect.Value) DecodeFunc {
 	return func(parser Parser) error {
 		val, err := parser.Value()
 		if err != nil {
@@ -76,7 +78,7 @@ func (e ValueEncoding) ToDecode(v reflect.Value) DecodeFunc {
 	}
 }
 
-func (e ValueEncoding) ToEncoding(v reflect.Value) *Encoding {
+func (e BasicEncoding) ToEncoding(v reflect.Value) *Encoding {
 	return &Encoding{e.ToEncode(v), e.ToDecode(v)}
 }
 
@@ -101,7 +103,7 @@ func matchMarshaler(v reflect.Value) (*Encoding, bool) {
 	if m == nil || u == nil {
 		return nil, false
 	}
-	return ValueEncoding{encodeMarshaler, decodeMarshaler}.ToEncoding(v), true
+	return BasicEncoding{encodeMarshaler, decodeMarshaler}.ToEncoding(v), true
 }
 
 func matchTextMarshaler(v reflect.Value) (*Encoding, bool) {
@@ -125,7 +127,7 @@ func matchTextMarshaler(v reflect.Value) (*Encoding, bool) {
 	if m == nil || u == nil {
 		return nil, false
 	}
-	return ValueEncoding{encodeTextMarshaler, decodeTextMarshaler}.ToEncoding(v), true
+	return BasicEncoding{encodeTextMarshaler, decodeTextMarshaler}.ToEncoding(v), true
 }
 
 func matchArray(v reflect.Value) (*Encoding, bool) {

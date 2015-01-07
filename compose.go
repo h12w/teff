@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package flow
+package tff
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 type Composer interface {
 	io.Writer
 	Init(prefix, indent string)
+	ComposeValue(s string) error
 	ComposeAny(v reflect.Value) error
 	ComposeList(length int, composeElem func(i int) error) error
 	Inline() bool
@@ -36,6 +37,12 @@ func (t *composer) Init(prefix, indent string) {
 
 func (t *composer) Inline() bool {
 	return t.inline
+}
+
+func (t *composer) ComposeValue(s string) error {
+	t.lineClear = false
+	_, err := t.Write([]byte(s))
+	return err
 }
 
 // length is the length of the list

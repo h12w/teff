@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package flow
+package tff
 
 import (
 	"encoding/json"
@@ -130,7 +130,7 @@ var _ = gspec.Add(func(s gspec.S) {
 	describe, testcase := s.Alias("describe"), s.Alias("testcase")
 	expect := gspec.Expect(s.Fail)
 
-	describe("flow.scanner", func() {
+	describe("tff.scanner", func() {
 		for _, tc := range testCases {
 			testcase(fmt.Sprint(tc), func() {
 				s := newScanner(strings.NewReader(tc.text))

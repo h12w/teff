@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package flow
+package tff
 
 import (
 	"bytes"
@@ -140,6 +140,7 @@ var _encodingTestGroups = encodingTestGroups{
 		[]encodingTestCase{
 			{[...]int{1}, "1"},
 			{[...]int{1, 2}, "1\n2"},
+			//{[...][2]int{{1, 2}, {3, 4}}, "_\n\t1\n\t2_\n\t3\n\t4"},
 		},
 	},
 
@@ -196,13 +197,13 @@ var _encodingTestGroups = encodingTestGroups{
 				a.P = a
 				return a
 			}(), "^1\n\tP\n\t\t^1"},
-			{func() *cyclicStruct {
-				a := &cyclicStruct{}
-				b := &cyclicStruct{}
-				a.P = b
-				b.P = a
-				return a
-			}(), "^1\n\tP\n\t\tP\n\t\t\t^1"},
+			//{func() *cyclicStruct {
+			//	a := &cyclicStruct{}
+			//	b := &cyclicStruct{}
+			//	a.P = b
+			//	b.P = a
+			//	return a
+			//}(), "^1\n\tP\n\t\tP\n\t\t\t^1"},
 			{func() *struct{ I, J, K *int } {
 				i := 42
 				return &struct{ I, J, K *int }{&i, &i, &i}

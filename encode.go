@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package flow
+package tff
 
 import (
 	"fmt"
@@ -178,9 +178,11 @@ func (enc *Encoder) encodeAliasedBasicType(v reflect.Value) (bool, error) {
 		reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128,
 		reflect.String:
 		if v.Kind().String() != v.Type().Name() {
-			enc.encodeTypeName(v)
 			return true, enc.ComposeList(1, func(int) error {
-				return enc.composeAnyValue(v)
+				enc.encodeTypeName(v)
+				return enc.ComposeList(1, func(int) error {
+					return enc.composeAnyValue(v)
+				})
 			})
 		}
 	}
@@ -189,7 +191,7 @@ func (enc *Encoder) encodeAliasedBasicType(v reflect.Value) (bool, error) {
 
 func (enc *Encoder) encodeTypeName(v reflect.Value) {
 	typ := indirectType(v.Type()).Name()
-	composeValue(enc, "!"+typ)
+	enc.ComposeValue("!" + typ)
 }
 
 func indirectType(t reflect.Type) reflect.Type {

@@ -26,7 +26,7 @@ This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
 The major difference between TEFF and OGDL is that TEFF disallow mutiple values
 occupying a single line. This constraint simplifies the parser, opens more
-possibilities for extention and makes it easier to compare two files line by line.
+possibilities for extensions and makes it easier to compare two files line by line.
 
 Notation
 --------
@@ -35,7 +35,7 @@ The syntax is specified using a variant of Extended Backus-Naur Form, based on
 which is extended with the following definitions:
 * `EOF` matches the end of the file.
 * `LINE_START` matches the start of a line.
-* **Escape sequences** defined in section [Interpreted string](#interpreted-string).
+* Escape sequences defined in section [Interpreted string](#interpreted-string).
 * Regular expressions defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 * Text enclosed by <> is a description.
 
@@ -91,7 +91,7 @@ TEFF can represent a cyclic graph by referenced annotation.
 
     ref_id          ::= "^" letter_digit+
     ref_annotation  ::= lead_space? "#" spaces? ref_id neweline
-     ↓                   ↓              ↓             ↓
+     ↓                   ↓             ↓             ↓
     annotation      ::= lead_space? "#" char_inline*  (newline | EOF)
 
 `ref_id` is a unique ID within a TEFF file. It should be defined only once but
@@ -101,7 +101,7 @@ TEFF can optionally represent type by using type annotation.
 
     type_label      ::= "<" letter_digit+ ">"
     type_annotation ::= lead_space? "#" spaces? type_label newline
-     ↓                   ↓              ↓                 ↓
+     ↓                   ↓              ↓                ↓
     annotation      ::= lead_space? "#" char_inline*      (newline | EOF)
 
 When both a cyclic reference and a type are defined for a node, it does not

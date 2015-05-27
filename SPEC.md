@@ -154,9 +154,9 @@ When the value of an key-value pair is encoded as a `list`:
 
 Encoding of `map_key`:
 
-* string: refer to [`interpreted_string`](#interpreted_string)
-* boolean: refer to [`boolean`](#boolean_value)
-* numeric: refer to [`numeric`](#numeric_value)
+* string: refer to [`interpreted_string`](#interpreted-string)
+* boolean: refer to [`boolean`](#boolean-value)
+* numeric: refer to [`numeric`](#numeric-value)
 * other: implementation specific, as long as the ending of the encoding is
   recognized without relying on the `:`.
 

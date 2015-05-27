@@ -14,11 +14,11 @@ Introduction
 TEFF (TEst Friendly Format) is an extensible data format with testing purpose in
 mind. it is easy to read, compare and write manually.
 
-In general, the [core format](#Core) of TEFF represents a tree. Each node of the
+In general, the [core format](#core) of TEFF represents a tree. Each node of the
 tree is a string occupying a single line, and the relation between nodes are
 represented by indents.
 
-This model is simple and [extensible](#Extensions). The minimal constraints make
+This model is simple and [extensible](#extensions). The minimal constraints make
 it possible to extend the resprentation of a data structure without intefering
 other nodes.
 
@@ -33,7 +33,8 @@ Notation
 The syntax is specified using a variant of Extended Backus-Naur Form, based on
 [W3C XML EBNF](http://www.w3.org/TR/xml11/#sec-notation),
 which is extended with the following definitions:
-* **EOF** matches the end of the file.
+* `EOF` matches the end of the file.
+* `LINE_START` matches the start of a line.
 * **Escape sequences** defined in section [Interpreted string](#interpreted-string).
 * Regular expressions defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 * Text enclosed by <> is a description.
@@ -43,18 +44,23 @@ Core
 A TEFF file is a sequence of [Unicode](http://unicode.org/) code points encoded
 in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 
-Except \t (U+0009), \n (U+000A) and \r (U+000D), code points less than U+0032 are
-invalid and should not appear in a TEFF file.
+Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
+U+0032 are invalid and should not appear in a TEFF file.
 
-    char_visible ::= [^\x00-\x20]
-    char_space   ::= [ \t]
-    char_inline  ::= char_visible | char_space
-    char_break   ::= [\r\n]
-    char_any     ::= char_inline | char_break
-    lead_space   ::= <one or more char_space's at the start of a line>
+    char_visible   ::= [^\x00-\x20]
+    char_space     ::= [ \t]
+    char_inline    ::= char_visible | char_space
+    char_break     ::= [\r\n]
+    char_any       ::= char_inline | char_break
+    spaces         ::= char_space+
+    lead_space     ::= LINE_START spaces
+    unicode_letter ::= <a Unicode code point classified as "Letter">
+    unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
+    letter_digit   ::= unicode_letter | unicode_digit | "_"
 
 TEFF tokens:
 
+    spaces       ::= char_space+
     annotation   ::= lead_space? "#" char_inline* (newline | EOF)
     newline      ::= char_break | "\r\n"
     string       ::= <one or more consecutive char_inline's excluding the lead_space>
@@ -73,33 +79,33 @@ TEFF grammer:
     value        ::= string
 
 Note: TEFF grammar only cares about tokens of type `string`, `indent` and `unindent`.
-Accumulated `annocation` tokens should be attached to the next `string` token.
+Accumulated `annocation` tokens should be attached to the next node.
 
 Extensions
 ----------
 In this section, format extensions for common types are specified. These types
 should cover all the builtin types and some of the types in standard libraries.
 
-### Referenced & typed node
-TEFF can represent a cyclic graph by referenced nodes.
+### Reference & type annotation
+TEFF can represent a cyclic graph by referenced annotation.
 
-    ref_id          ::= '^' char_visible+
-    referenced_node ::= ref_id  indent list  unindent
-     ↓                   ↓              ↓
-    node            ::= value  (indent list  unindent)?
+    ref_id          ::= "^" letter_digit+
+    ref_annotation  ::= lead_space? "#" spaces? ref_id neweline
+     ↓                   ↓              ↓             ↓
+    annotation      ::= lead_space? "#" char_inline*  (newline | EOF)
 
-A cyclic reference id is a unique ID within a TEFF file. It should be defined
-only once but can be referenced multiple times by the reference ID alone.
+`ref_id` is a unique ID within a TEFF file. It should be defined only once but
+can be referenced multiple times by the `ref_id`.
 
-TEFF can (optionally) represent type by using typed nodes.
+TEFF can optionally represent type by using type annotation.
 
-    type_label      ::= '!' char_visible+
-    typed_node      ::= type_label indent list unindent
-     ↓                   ↓                 ↓
-    node            ::= value     (indent list unindent)?
+    type_label      ::= "<" letter_digit+ ">"
+    type_annotation ::= lead_space? "#" spaces? type_label newline
+     ↓                   ↓              ↓                 ↓
+    annotation      ::= lead_space? "#" char_inline*      (newline | EOF)
 
 When both a cyclic reference and a type are defined for a node, it does not
-matter which comes first.
+matter which comes first. Both annotates the next node.
 
 ### Array
 
@@ -210,7 +216,7 @@ Float value is an unquoted string that encode a floating point number:
      ↓              ↓
     value      ::= string
 
-### Date/time
+### Date/time (TODO: use a shorter representation)
 A date/time value is an unquoted string encoded with
 [RFC3339](http://www.rfc-editor.org/rfc/rfc3339.txt)
 

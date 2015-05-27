@@ -14,16 +14,18 @@ Introduction
 TEFF (TEst Friendly Format) is an extensible data format with testing purpose in
 mind. it is easy to read, compare and write manually.
 
-In general, the format of represents a tree. Each node of the tree is a string
-occupying a single line, and the relation between nodes are represented by indents.
+In general, the [core format](#Core) of TEFF represents a tree. Each node of the
+tree is a string occupying a single line, and the relation between nodes are
+represented by indents.
 
-This model is simple and extensible. The minimal constraints make it possible to
-extend the resprentation of a data structure without intefering other nodes.
+This model is simple and [extensible](#Extensions). The minimal constraints make
+it possible to extend the resprentation of a data structure without intefering
+other nodes.
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
-The major difference between TEFF and OGDL is that TEFF disallow mutiple
-values occupying a single line. This constraint simplifies the parser, opens more
+The major difference between TEFF and OGDL is that TEFF disallow mutiple values
+occupying a single line. This constraint simplifies the parser, opens more
 possibilities for extention and makes it easier to compare two files line by line.
 
 Notation
@@ -53,7 +55,7 @@ invalid and should not appear in a TEFF file.
 
 TEFF tokens:
 
-    comment      ::= lead_space? "#" char_inline* (newline | EOF)
+    annotation   ::= lead_space? "#" char_inline* (newline | EOF)
     newline      ::= char_break | "\r\n"
     string       ::= <one or more consecutive char_inline's excluding the lead_space>
     indent       ::= <an indent token is emitted when the length of the lead_space
@@ -63,17 +65,41 @@ TEFF tokens:
                       line. Each of them cancels the last indent, till the indent
                       level becomes the same as the next line>
 
-TEFF grammar only cares about tokens of type 'string', 'indent' and 'unindent'.
+TEFF grammer:
 
     teff_file    ::= list EOF
     list         ::= node*
     node         ::= value (indent list unindent)?
     value        ::= string
 
+Note: TEFF grammar only cares about tokens of type `string`, `indent` and `unindent`.
+Accumulated `annocation` tokens should be attached to the next `string` token.
+
 Extensions
 ----------
 In this section, format extensions for common types are specified. These types
 should cover all the builtin types and some of the types in standard libraries.
+
+### Referenced & typed node
+TEFF can represent a cyclic graph by referenced nodes.
+
+    ref_id          ::= '^' char_visible+
+    referenced_node ::= ref_id  indent list  unindent
+     ↓                   ↓              ↓
+    node            ::= value  (indent list  unindent)?
+
+A cyclic reference id is a unique ID within a TEFF file. It should be defined
+only once but can be referenced multiple times by the reference ID alone.
+
+TEFF can (optionally) represent type by using typed nodes.
+
+    type_label      ::= '!' char_visible+
+    typed_node      ::= type_label indent list unindent
+     ↓                   ↓                 ↓
+    node            ::= value     (indent list unindent)?
+
+When both a cyclic reference and a type are defined for a node, it does not
+matter which comes first.
 
 ### Array
 
@@ -83,7 +109,7 @@ An array is represented as a list.
      ↓                 ↓
     list          ::= node*
 
-To represent an array of array, the anonymous symbol "_" is introduced to
+To represent an array of array, the anonymous symbol `_` is introduced to
 represent the anonymous parent of a child array.
 
     array_element ::=  _     indent array unindent
@@ -116,27 +142,6 @@ Some languages (like Go) support a compound map key like array of struct. It can
 be represented in TEFF as long as the key can be encoded into a single line string.
 The encoding is implementation specific, and will be treated as a normal string
 for languages that do not support compound map key.
-
-### Referenced & typed node
-TEFF can represent a cyclic graph by referenced nodes.
-
-    ref_id          ::= '^' char_visible+
-    referenced_node ::= ref_id  indent list  unindent
-     ↓                   ↓              ↓
-    node            ::= value  (indent list  unindent)?
-
-A cyclic reference id is a unique ID within a TEFF file. It should be defined
-only once but can be referenced multiple times by the reference ID alone.
-
-TEFF can (optionally) represent type by using typed nodes.
-
-    type_label      ::= '!' char_visible+
-    typed_node      ::= type_label indent list unindent
-     ↓                   ↓                 ↓
-    node            ::= value     (indent list unindent)?
-
-When both a cyclic reference and a type are defined for a node, it does not
-matter which comes first.
 
 ### Nil
 

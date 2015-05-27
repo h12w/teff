@@ -3,7 +3,7 @@ Specification of Test Friendly Format
 
 Hǎiliàng Wáng <w@h12.me>
 
-Copyright (c) 2014, Hǎiliàng Wáng. All rights reserved.
+Copyright (c) 2014-2015, Hǎiliàng Wáng. All rights reserved.
 
 This specification is licensed under the Creative Commons Attribution 4.0
 International License. To view a copy of this license, visit
@@ -11,7 +11,7 @@ International License. To view a copy of this license, visit
 
 Introduction
 ------------
-TFF (Test Friendly Format) is an extensible data format with testing purpose in
+TEFF (TEst Friendly Format) is an extensible data format with testing purpose in
 mind. it is easy to read, compare and write manually.
 
 In general, the format of represents a tree. Each node of the tree is a string
@@ -22,14 +22,14 @@ extend the resprentation of a data structure without intefering other nodes.
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
-The major difference between TFF and OGDL is that TFF disallow mutiple
+The major difference between TEFF and OGDL is that TEFF disallow mutiple
 values occupying a single line. This constraint simplifies the parser, opens more
 possibilities for extention and makes it easier to compare two files line by line.
 
 Notation
 --------
 The syntax is specified using a variant of Extended Backus-Naur Form, based on
-[W3C XML EBNF](http://www.w3.org/TR/2006/REC-xml11-20060816/#sec-notation),
+[W3C XML EBNF](http://www.w3.org/TR/xml11/#sec-notation),
 which is extended with the following definitions:
 * **EOF** matches the end of the file.
 * **Escape sequences** defined in section [Interpreted string](#interpreted-string).
@@ -38,11 +38,11 @@ which is extended with the following definitions:
 
 Core
 ----
-A TFF file is a sequence of [Unicode](http://unicode.org/) code points encoded
-in [UTF-8](http://www.unicode.org/versions/Unicode6.2.0/ch03.pdf).
+A TEFF file is a sequence of [Unicode](http://unicode.org/) code points encoded
+in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 
 Except \t (U+0009), \n (U+000A) and \r (U+000D), code points less than U+0032 are
-invalid and should not appear in a TFF file.
+invalid and should not appear in a TEFF file.
 
     char_visible ::= [^\x00-\x20]
     char_space   ::= [ \t]
@@ -51,9 +51,9 @@ invalid and should not appear in a TFF file.
     char_any     ::= char_inline | char_break
     lead_space   ::= <one or more char_space's at the start of a line>
 
-TFF tokens:
+TEFF tokens:
 
-    comment      ::= "#" char_inline* (newline | EOF)
+    comment      ::= lead_space? "#" char_inline* (newline | EOF)
     newline      ::= char_break | "\r\n"
     string       ::= <one or more consecutive char_inline's excluding the lead_space>
     indent       ::= <an indent token is emitted when the length of the lead_space
@@ -63,9 +63,9 @@ TFF tokens:
                       line. Each of them cancels the last indent, till the indent
                       level becomes the same as the next line>
 
-TFF grammar only cares about tokens of type 'string', 'indent' and 'unindent'.
+TEFF grammar only cares about tokens of type 'string', 'indent' and 'unindent'.
 
-    tff_file     ::= list EOF
+    teff_file    ::= list EOF
     list         ::= node*
     node         ::= value (indent list unindent)?
     value        ::= string
@@ -113,22 +113,22 @@ as a parent-child relation.
     node          ::= value  (indent list      unindent)?
 
 Some languages (like Go) support a compound map key like array of struct. It can
-be represented in TFF as long as the key can be encoded into a single line string.
+be represented in TEFF as long as the key can be encoded into a single line string.
 The encoding is implementation specific, and will be treated as a normal string
 for languages that do not support compound map key.
 
 ### Referenced & typed node
-TFF can represent a cyclic graph by referenced nodes.
+TEFF can represent a cyclic graph by referenced nodes.
 
     ref_id          ::= '^' char_visible+
     referenced_node ::= ref_id  indent list  unindent
      ↓                   ↓              ↓
     node            ::= value  (indent list  unindent)?
 
-A cyclic reference id is a unique ID within a TFF file. It should be defined
+A cyclic reference id is a unique ID within a TEFF file. It should be defined
 only once but can be referenced multiple times by the reference ID alone.
 
-TFF can (optionally) represent type by using typed nodes.
+TEFF can (optionally) represent type by using typed nodes.
 
     type_label      ::= '!' char_visible+
     typed_node      ::= type_label indent list unindent

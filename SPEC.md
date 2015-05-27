@@ -60,23 +60,23 @@ U+0032 are invalid and should not appear in a TEFF file.
 
 TEFF tokens:
 
-    spaces       ::= char_space+
-    annotation   ::= lead_space? "#" char_inline* (newline | EOF)
-    newline      ::= char_break | "\r\n"
-    string       ::= <one or more consecutive char_inline's excluding the lead_space>
-    indent       ::= <an indent token is emitted when the length of the lead_space
-                      increases in this line compared to the previous line>
-    unindent     ::= <one or more unindent tokens are emitted when the length of
-                      the lead_space decreases in this line compared to the previous
-                      line. Each of them cancels the last indent, till the indent
-                      level becomes the same as the next line>
+    spaces         ::= char_space+
+    annotation     ::= lead_space? "#" char_inline* (newline | EOF)
+    newline        ::= char_break | "\r\n"
+    string         ::= <one or more consecutive char_inline's excluding the lead_space>
+    indent         ::= <an indent token is emitted when the length of the lead_space
+                        increases in this line compared to the previous line>
+    unindent       ::= <one or more unindent tokens are emitted when the length of
+                        the lead_space decreases in this line compared to the previous
+                        line. Each of them cancels the last indent, till the indent
+                        level becomes the same as the next line>
 
 TEFF grammer:
 
-    teff_file    ::= list EOF
-    list         ::= node*
-    node         ::= value (indent list unindent)?
-    value        ::= string
+    teff_file      ::= list EOF
+    list           ::= node*
+    node           ::= value (indent list unindent)?
+    value          ::= string
 
 Note: TEFF grammar only cares about tokens of type `string`, `indent` and `unindent`.
 Accumulated `annocation` tokens should be attached to the next node.

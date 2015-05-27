@@ -87,7 +87,7 @@ In this section, format extensions for common types are specified. These types
 should cover all the builtin types and some of the types in standard libraries.
 
 ### Reference & type annotation
-TEFF can represent a cyclic graph by referenced annotation.
+TEFF can represent a cyclic graph by reference annotation.
 
     ref_id          ::= "^" letter_digit+
     ref_annotation  ::= lead_space? "#" spaces? ref_id neweline
@@ -97,7 +97,7 @@ TEFF can represent a cyclic graph by referenced annotation.
 `ref_id` is a unique ID within a TEFF file. It should be defined only once but
 can be referenced multiple times by the `ref_id`.
 
-TEFF can optionally represent type by using type annotation.
+TEFF can optionally represent type by type annotation.
 
     type_label      ::= "<" letter_digit+ ">"
     type_annotation ::= lead_space? "#" spaces? type_label newline
@@ -133,21 +133,32 @@ e.g.
         5
 
 ### Map
-A map is represented with a list of key-value pairs. Each pair is represented
-as a parent-child relation.
+A map is represented with a list of key-value pairs. Each pair is represented as
+a node.
 
     map           ::= key_value*
      ↓                 ↓
     list          ::= node*
 
-    key_value     ::= map_key indent map_value unindent
+When the value of an key-value pair is encoded as a single `value`:
+
+    key_value     ::= map_key ":" spaces? map_value
+     ↓                 ↓              
+    node          ::= value
+
+When the value of an key-value pair is encoded as a `list`:
+
+    key_value     ::= map_key ":" indent map_value unindent
      ↓                 ↓              ↓
     node          ::= value  (indent list      unindent)?
 
-Some languages (like Go) support a compound map key like array of struct. It can
-be represented in TEFF as long as the key can be encoded into a single line string.
-The encoding is implementation specific, and will be treated as a normal string
-for languages that do not support compound map key.
+Encoding of `map_key`:
+
+* string: refer to [`interpreted_string`](#interpreted_string)
+* boolean: refer to [`boolean`](#boolean_value)
+* numeric: refer to [`numeric`](#numeric_value)
+* other: implementation specific, as long as the ending of the encoding is
+  recognized without relying on the `:`.
 
 ### Nil
 

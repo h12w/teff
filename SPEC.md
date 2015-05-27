@@ -1,5 +1,5 @@
-Specification of Test Friendly Format
-=====================================
+Test Friendly Format (TEFF)
+===========================
 
 Hǎiliàng Wáng <w@h12.me>
 

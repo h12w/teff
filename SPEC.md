@@ -33,10 +33,8 @@ Notation
 The syntax is specified using a variant of Extended Backus-Naur Form, based on
 [W3C XML EBNF](http://www.w3.org/TR/xml11/#sec-notation),
 which is extended with the following definitions:
-* `EOF` matches the end of the file.
-* `LINE_START` matches the start of a line.
 * Escape sequences defined in section [Interpreted string](#interpreted-string).
-* Regular expressions defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
+* Regular expressions defined in section [Regular expression](#regular-expression).
 * Text enclosed by <> is a description.
 
 Core
@@ -53,16 +51,17 @@ U+0032 are invalid and should not appear in a TEFF file.
     char_break     ::= [\r\n]
     char_any       ::= char_inline | char_break
     spaces         ::= char_space+
-    lead_space     ::= LINE_START spaces
     unicode_letter ::= <a Unicode code point classified as "Letter">
     unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
     letter_digit   ::= unicode_letter | unicode_digit | "_"
+    newline        ::= char_break | "\r\n"
+    EOF            ::= <end of file>
+    LINE_START     ::= <start of a line seperated by newline>
+    lead_space     ::= LINE_START spaces
 
 TEFF tokens:
 
-    spaces         ::= char_space+
     annotation     ::= lead_space? "#" char_inline* (newline | EOF)
-    newline        ::= char_break | "\r\n"
     string         ::= <one or more consecutive char_inline's excluding the lead_space>
     indent         ::= <an indent token is emitted when the length of the lead_space
                         increases in this line compared to the previous line>
@@ -83,8 +82,9 @@ Accumulated `annocation` tokens should be attached to the next node.
 
 Extensions
 ----------
-In this section, format extensions for common types are specified. These types
-should cover all the builtin types and some of the types in standard libraries.
+In this section, format extensions for annotations and common types are specified.
+These definitions should cover all the builtin types and some of the important
+types in standard libraries.
 
 ### Reference & type annotation
 TEFF can represent a cyclic graph by reference annotation.
@@ -168,9 +168,9 @@ The special string nil is used to represent an uninitialized nullable node.
      ↓          ↓
     value  ::= string
 
-### Interpreted string
-Interpreted string is a double quoted string, that can interpret certain escape
-sequences.
+### String
+Strings are represented with interpreted strings (double quoted), that can
+interpret certain escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
     interpreted_string ::= '"' (unicode_value | byte_value)* '"'
@@ -191,6 +191,10 @@ Escape sequences:
     \x    Unicode code point represented with two hexadecimal digits followed by \x
     \u    Unicode code point represented with exactly 4 hexadecimal digits followed by \u
     \U    Unicode code point represented with exactly 8 hexadecimal digits followed by \U
+
+### Regular expression
+Regular expressions is a non-quoted string. The syntax is defined in 
+[Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 
 ### Boolean value
 Boolean value is an unquoted string of either true of false.
@@ -264,4 +268,8 @@ An IPv6 address value is an unquoted string encoded with
 e.g.
 
     2001:4860:0:2001::68
+
+### Custom extensions (TODO)
+Custom encoding can be implemented as long as it does not conflict with the
+buildtin encodings.
 

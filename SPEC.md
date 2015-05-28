@@ -62,7 +62,7 @@ U+0032 are invalid and should not appear in a TEFF file.
 TEFF tokens:
 
     annotation     ::= lead_space? "#" char_inline* (newline | EOF)
-    string         ::= <one or more consecutive char_inline's excluding the lead_space>
+    line_string    ::= <one or more consecutive char_inline's excluding the lead_space>
     indent         ::= <an indent token is emitted when the length of the lead_space
                         increases in this line compared to the previous line>
     unindent       ::= <one or more unindent tokens are emitted when the length of
@@ -75,10 +75,10 @@ TEFF grammer:
     teff_file      ::= list EOF
     list           ::= node*
     node           ::= value (indent list unindent)?
-    value          ::= string
+    value          ::= line_string
 
-Note: TEFF grammar only cares about tokens of type `string`, `indent` and `unindent`.
-Accumulated `annocation` tokens should be attached to the next node.
+Note: TEFF grammar only cares about tokens of type `line_string`, `indent` and
+`unindent`. Accumulated `annocation` tokens should be attached to the next node.
 
 Extensions
 ----------
@@ -162,20 +162,30 @@ Encoding of `map_key`:
 
 ### Nil
 
-The special string nil is used to represent an uninitialized nullable node.
+The special `line_string` nil is used to represent an uninitialized nullable node.
 
     nil    ::= "nil"
      ↓          ↓
-    value  ::= string
+    value  ::= line_string
 
 ### String
-Strings are represented with interpreted strings (double quoted), that can
-interpret certain escape sequences.
+A string is represented as either a `raw_string` or an `interpreted_string` (double
+quoted).
+
+    string             ::= raw_string | interpreted_string
+     ↓                      ↓
+    value              ::= line_string
+
+A `raw_string` is the same as a `line_string`, that cannot contains `newline`.
+
+    raw_string         ::= line_string
+
+An `interpreted_string` can represents certain escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
     interpreted_string ::= '"' (unicode_value | byte_value)* '"'
      ↓                      ↓
-    value              ::= string
+    value              ::= line_string
 
 Escape sequences:
 
@@ -193,18 +203,18 @@ Escape sequences:
     \U    Unicode code point represented with exactly 8 hexadecimal digits followed by \U
 
 ### Regular expression
-Regular expressions is a non-quoted string. The syntax is defined in 
-[Golang Regexp](http://golang.org/pkg/regexp/syntax/).
+A regular expression is a `line_string`. The syntax of regular expressions are
+defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 
 ### Boolean value
-Boolean value is an unquoted string of either true of false.
+Boolean value is a `line_string` of either true of false.
 
     boolean    ::= "true" | "false"
      ↓              ↓
-    value      ::= string
+    value      ::= line_string
 
 ### Numeric value
-Numeric value is an unquoted string that encode a number.
+Numeric value is a `line_string` that encode a number.
 
     sign       ::= "+" | "-"
     decimals   ::= [1-9] [0-9]*
@@ -212,10 +222,10 @@ Numeric value is an unquoted string that encode a number.
 #### Integer
     integer    ::= sign? decimals
      ↓              ↓
-    value      ::= string
+    value      ::= line_string
 
 #### Float
-Float value is an unquoted string that encode a floating point number:
+Float value is a `line_string` that encode a floating point number:
 
     exponent   ::= ( "e" | "E" ) ( "+" | "-" )? decimals
     float_base ::= (decimals "." decimal* exponent?) |
@@ -223,21 +233,21 @@ Float value is an unquoted string that encode a floating point number:
                    ("." decimals exponent?)
     float      ::= sign? float_base
      ↓              ↓
-    value      ::= string
+    value      ::= line_string
 
 #### Complex
     int_float  ::= decimals | float_base
     complex    ::= sign? int_float sign int_float "i"
      ↓              ↓
-    value      ::= string
+    value      ::= line_string
 
 ### Date/time (TODO: use a shorter representation)
-A date/time value is an unquoted string encoded with
+A date/time value is an `line_string` encoded with
 [RFC3339](http://www.rfc-editor.org/rfc/rfc3339.txt)
 
     date_time  ::= rfc3339_date_time
      ↓              ↓
-    value      ::= string
+    value      ::= line_string
 
 e.g.
 
@@ -248,22 +258,22 @@ An IP address is either an IPv4 or IPv6 address.
 
     ip         ::= ipv4 | ipv6
 
-An IPv4 address value is an unquoted string encoded with dot-decimal notation:
+An IPv4 address value is an `line_string` encoded with dot-decimal notation:
 
     ipv4       ::= decimals "." decimals "." decimals "." decimals
      ↓              ↓
-    value      ::= string
+    value      ::= line_string
 
 e.g.
 
     74.125.19.99
 
-An IPv6 address value is an unquoted string encoded with
+An IPv6 address value is an `line_string` encoded with
 [RFC5952](http://www.rfc-editor.org/rfc/rfc5952.txt).
 
     ipv6       ::= rfc5952_ipv6_address
      ↓              ↓
-    value      ::= string
+    value      ::= line_string
 
 e.g.
 

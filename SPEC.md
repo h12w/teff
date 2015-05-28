@@ -180,7 +180,7 @@ A `raw_string` is the same as a `line_string`, that cannot contains `newline`.
 
     raw_string         ::= line_string
 
-An `interpreted_string` can represents certain escape sequences.
+An `interpreted_string` can contain any Unicode code points by escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
     interpreted_string ::= '"' (unicode_value | byte_value)* '"'

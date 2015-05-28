@@ -1,8 +1,6 @@
 Test Friendly Format (TEFF)
 ===========================
 
-Hǎiliàng Wáng <w@h12.me>
-
 Copyright (c) 2014-2015, Hǎiliàng Wáng. All rights reserved.
 
 This specification is licensed under the Creative Commons Attribution 4.0

@@ -44,7 +44,7 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
-func TestPointer(t *testing.T) {
+func TestAlloc(t *testing.T) {
 	{
 		var p *int
 		if err := Unmarshal([]byte("1"), &p); err != nil {

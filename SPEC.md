@@ -41,7 +41,7 @@ A TEFF file is a sequence of [Unicode](http://unicode.org/) code points encoded
 in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 
 Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
-U+0032 are invalid and should not appear in a TEFF file.
+U+0020 (space) are invalid and should not appear in a TEFF file.
 
     char_visible   ::= [^\x00-\x20]
     char_space     ::= [ \t]

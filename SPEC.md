@@ -64,9 +64,9 @@ TEFF tokens:
     indent         ::= <lead_space longer than the lead_space of the previous line>
     unindent       ::= <lead_space shorter than the lead_space of the previous line,
                         an indent token must be paired with an unindent token,
-			so multiple unindent tokens could be emitted to cancel
-			indent tokens of previous lines in reverse order to the
-			line whose lead_space is the same as the current line>
+                        so multiple unindent tokens could be emitted to cancel
+                        indent tokens of previous lines in reverse order to the
+                        line whose lead_space is the same as the current line>
 
 TEFF grammer:
 

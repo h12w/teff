@@ -85,9 +85,9 @@ types in standard libraries.
 TEFF can represent a cyclic graph by reference annotation.
 
     ref_id          ::= "^" letter_digit+
-    ref_annotation  ::= lead_space? "#" spaces? ref_id neweline
-     ↓                   ↓               ↓              ↓
-    annotation      ::= lead_space? "#" char_inline*  (newline | EOF)
+    ref_annotation  ::= "#" spaces? ref_id neweline
+     ↓                   ↓   ↓              ↓
+    annotation      ::= "#" char_inline*  (newline | EOF)
 
 `ref_id` is a unique ID within a TEFF file. It should be defined only once but
 can be referenced multiple times by the `ref_id`.
@@ -95,9 +95,9 @@ can be referenced multiple times by the `ref_id`.
 TEFF can optionally represent type by type annotation.
 
     type_label      ::= "<" letter_digit+ ">"
-    type_annotation ::= lead_space? "#" spaces? type_label newline
-     ↓                   ↓               ↓                  ↓
-    annotation      ::= lead_space? "#" char_inline*      (newline | EOF)
+    type_annotation ::= "#" spaces? type_label newline
+     ↓                   ↓   ↓                  ↓
+    annotation      ::= "#" char_inline*      (newline | EOF)
 
 When both a cyclic reference and a type are defined for a node, it does not
 matter which comes first. Both annotates the next node.

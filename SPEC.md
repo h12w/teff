@@ -52,21 +52,19 @@ U+0020 (space) are invalid and should not appear in a TEFF file.
     unicode_letter ::= <a Unicode code point classified as "Letter">
     unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
     letter_digit   ::= unicode_letter | unicode_digit | "_"
-    newline        ::= char_break | "\r\n"
     EOF            ::= <end of file>
-    LINE_START     ::= <start of a line seperated by newline>
-    lead_space     ::= LINE_START spaces
 
 TEFF tokens:
 
-    annotation     ::= "#" char_inline* (newline | EOF)
+    newline        ::= char_break | "\r\n"
+    annotation     ::= "#" char_inline*
     line_string    ::= char_visible+ char_inline*
-    indent         ::= <lead_space longer than the lead_space of the previous line>
-    unindent       ::= <lead_space shorter than the lead_space of the previous line,
+    indent         ::= <lead spaces longer than the lead spaces of the previous line>
+    unindent       ::= <lead spaces shorter than the lead spaces of the previous line,
                         an indent token must be paired with an unindent token,
                         so multiple unindent tokens could be emitted to cancel
                         indent tokens of previous lines in reverse order to the
-                        line whose lead_space is the same as the current line>
+                        line whose lead spaces is the same as the current line>
 
 TEFF grammer:
 

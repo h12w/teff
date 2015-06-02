@@ -59,24 +59,21 @@ U+0020 (space) are invalid and should not appear in a TEFF file.
 
 TEFF tokens:
 
-    annotation     ::= lead_space? "#" char_inline* (newline | EOF)
-    line_string    ::= <one or more consecutive char_inline's excluding the lead_space>
-    indent         ::= <an indent token is emitted when the length of the lead_space
-                        increases in this line compared to the previous line>
-    unindent       ::= <one or more unindent tokens are emitted when the length of
-                        the lead_space decreases in this line compared to the previous
-                        line. Each of them cancels the last indent, till the indent
-                        level becomes the same as the next line>
+    annotation     ::= "#" char_inline* (newline | EOF)
+    line_string    ::= char_visible+ char_inline*
+    indent         ::= <lead_space longer than the lead_space of the previous line>
+    unindent       ::= <lead_space shorter than the lead_space of the previous line,
+                        an indent token must be paired with an unindent token,
+			so multiple unindent tokens could be emitted to cancel
+			indent tokens of previous lines in reverse order to the
+			line whose lead_space is the same as the current line>
 
 TEFF grammer:
 
     teff_file      ::= list EOF
     list           ::= node*
-    node           ::= value (indent list unindent)?
+    node           ::= annotation* value (indent list unindent)?
     value          ::= line_string
-
-Note: TEFF grammar only cares about tokens of type `line_string`, `indent` and
-`unindent`. Accumulated `annocation` tokens should be attached to the next node.
 
 Extensions
 ----------

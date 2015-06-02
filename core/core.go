@@ -1,15 +1,10 @@
-package teff
+package core
 
+/*
 import (
 	"bufio"
-	"errors"
 	"io"
 	"unicode"
-)
-
-var (
-	errIllegalChar = errors.New("illegal Unicode character")
-	errInvalidChar = errors.New("invalid character in TEFF")
 )
 
 type (
@@ -29,7 +24,7 @@ func (n List) String() string {
 	return ""
 }
 
-func ParseCore(reader io.Reader) (*List, error) {
+func Parse(reader io.Reader) (*List, error) {
 	return newParser(reader).Parse()
 }
 
@@ -82,3 +77,4 @@ func (pa *parser) next() bool {
 func (pa *parser) formatErr(e error) error {
 	return e
 }
+*/

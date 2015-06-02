@@ -1,7 +1,7 @@
-package teff
+package core
 
+/*
 import (
-	"bytes"
 	"reflect"
 	"strings"
 	"testing"
@@ -37,7 +37,7 @@ b
 		}, "a\n\tb\n\tc\n\t\te\n\t\tf\n\td"},
 	} {
 		testcase.s = strings.TrimSpace(testcase.s)
-		list, err := ParseCore(strings.NewReader(testcase.s))
+		list, err := Parse(strings.NewReader(testcase.s))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -46,20 +46,7 @@ b
 		}
 	}
 }
-
-func TestInvalidChar(t *testing.T) {
-	for _, testcase := range []string{
-		"\x00",
-		"\x19",
-		"\x19",
-		"\xed\xa0",
-	} {
-		if _, err := ParseCore(bytes.NewReader([]byte(testcase))); err == nil {
-			t.Fatal("expect error for illegal character.")
-		}
-
-	}
-}
+*/
 
 type stringer interface {
 	String() string

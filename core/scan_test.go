@@ -38,12 +38,18 @@ func TestScan(t *testing.T) {
 		{"\n", "<l>"},
 		{"\r", "<l>"},
 		{"\r\n", "<l>"},
+		{"\r\r", "<l> <l>"},
+		{"\n\n", "<l> <l>"},
+		{"\n\r", "<l> <l>"},
+		{"#b", "<a>b"},
+		{"#b\n", "<a>b <l>"},
+		{"#b\n#c", "<a>b <l> <a>c"},
 	} {
 		toks, err := scanAll(testcase.s)
 		if err != nil {
 			t.Fatalf("testcase %d: %v", i, err)
 		}
-		actual := strings.Join(toks, "\n")
+		actual := strings.Join(toks, " ")
 		if actual != testcase.expected {
 			t.Fatalf("expect %s, got %s", testcase.expected, actual)
 		}

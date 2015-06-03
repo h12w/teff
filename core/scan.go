@@ -23,7 +23,7 @@ const (
 
 type Token struct {
 	Type  TokenType
-	Value []byte
+	Value string
 }
 
 type Scanner struct {
@@ -42,11 +42,13 @@ func (s *Scanner) Scan() bool {
 		return false
 	}
 	switch s.ch {
+	case '#':
+		return s.annotation()
 	case '\t', ' ':
 	case '\r', '\n':
 		return s.newline()
 	}
-	return true
+	return false
 }
 
 func (s *Scanner) newline() bool {
@@ -56,6 +58,19 @@ func (s *Scanner) newline() bool {
 			return s.prev()
 		}
 	}
+	return true
+}
+
+func (s *Scanner) annotation() bool {
+	rs := []rune{}
+	for s.next() {
+		if s.ch == '\r' || s.ch == '\n' {
+			s.prev()
+			break
+		}
+		rs = append(rs, s.ch)
+	}
+	s.tok = Token{Type: Annotation, Value: string(rs)}
 	return true
 }
 

@@ -47,11 +47,7 @@ U+0020 (space) are invalid and should not appear in a TEFF file.
     char_space     ::= [ \t]
     char_inline    ::= char_visible | char_space
     char_break     ::= [\r\n]
-    char_any       ::= char_inline | char_break
     spaces         ::= char_space+
-    unicode_letter ::= <a Unicode code point classified as "Letter">
-    unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
-    letter_digit   ::= unicode_letter | unicode_digit | "_"
     EOF            ::= <end of file>
 
 TEFF tokens:
@@ -78,6 +74,10 @@ Extensions
 In this section, format extensions for annotations and common types are specified.
 These definitions should cover all the builtin types and some of the important
 types in standard libraries.
+
+    unicode_letter  ::= <a Unicode code point classified as "Letter">
+    unicode_digit   ::= <a Unicode code point classified as "Decimal Digit">
+    letter_digit    ::= unicode_letter | unicode_digit | "_"
 
 ### Reference & type annotation
 TEFF can represent a cyclic graph by reference annotation.

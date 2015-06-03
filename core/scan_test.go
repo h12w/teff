@@ -13,21 +13,24 @@ var p = fmt.Println
 func (t TokenType) String() string {
 	switch t {
 	case Newline:
-		return "<l>"
+		return "l"
 	case Annotation:
-		return "<a>"
+		return "a"
 	case LineString:
-		return "<s>"
+		return "s"
 	case Indent:
-		return "<in>"
+		return "in"
 	case Unindent:
-		return "<un>"
+		return "un"
 	}
-	return "<?>"
+	return "?"
 }
 
 func (t Token) String() string {
-	return t.Type.String() + string(t.Value)
+	if t.Value == "" {
+		return fmt.Sprintf("<%s>", t.Type.String())
+	}
+	return fmt.Sprintf("<%s:%s>", t.Value, t.Type.String())
 }
 
 func TestScan(t *testing.T) {
@@ -41,10 +44,10 @@ func TestScan(t *testing.T) {
 		{"\r\r", "<l> <l>"},
 		{"\n\n", "<l> <l>"},
 		{"\n\r", "<l> <l>"},
-		{"#b", "<a>b"},
-		{"#b\n", "<a>b <l>"},
-		{"#b\n#c", "<a>b <l> <a>c"},
-		{"a", "<s>a"},
+		{"#x", "<x:a>"},
+		{"#x\n#y", "<x:a> <l> <y:a>"},
+		{"x", "<x:s>"},
+		{"x\ny", "<x:s> <l> <y:s>"},
 	} {
 		toks, err := scanAll(testcase.s)
 		if err != nil {
@@ -52,7 +55,7 @@ func TestScan(t *testing.T) {
 		}
 		actual := strings.Join(toks, " ")
 		if actual != testcase.expected {
-			t.Fatalf("expect %s, got %s", testcase.expected, actual)
+			t.Fatalf("testcase %d: expect %s, got %s", i, testcase.expected, actual)
 		}
 	}
 }

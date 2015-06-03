@@ -2,10 +2,53 @@ package core
 
 import (
 	"bufio"
-	"io"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
+
+var p = fmt.Println
+
+func (t TokenType) String() string {
+	switch t {
+	case Newline:
+		return "<l>"
+	case Annotation:
+		return "<a>"
+	case LineString:
+		return "<s>"
+	case Indent:
+		return "<in>"
+	case Unindent:
+		return "<un>"
+	}
+	return "<?>"
+}
+
+func (t Token) String() string {
+	return t.Type.String() + string(t.Value)
+}
+
+func TestScan(t *testing.T) {
+	for i, testcase := range []struct {
+		s        string
+		expected string
+	}{
+		{"\n", "<l>"},
+		{"\r", "<l>"},
+		{"\r\n", "<l>"},
+	} {
+		toks, err := scanAll(testcase.s)
+		if err != nil {
+			t.Fatalf("testcase %d: %v", i, err)
+		}
+		actual := strings.Join(toks, "\n")
+		if actual != testcase.expected {
+			t.Fatalf("expect %s, got %s", testcase.expected, actual)
+		}
+	}
+}
 
 func TestInvalidChar(t *testing.T) {
 	for i, testcase := range []string{
@@ -20,15 +63,26 @@ func TestInvalidChar(t *testing.T) {
 	}
 }
 
-type errRuneReader struct{}
-
-func (errRuneReader) ReadRune() (rune, int, error) {
-	return 0, 0, io.EOF
-}
-
 func TestReadError(t *testing.T) {
 	s := NewScanner(errRuneReader{})
 	if s.Scan() != false || s.Err() == nil {
 		t.Fatal("expect read error.")
 	}
+}
+func (errRuneReader) ReadRune() (rune, int, error) {
+	return 0, 0, errors.New("any error")
+}
+func (errRuneReader) UnreadRune() error { return nil }
+
+type errRuneReader struct{}
+
+func scanAll(testcase string) (toks []string, err error) {
+	s := NewScanner(bufio.NewReader(strings.NewReader(testcase)))
+	for s.Scan() {
+		toks = append(toks, s.Token().String())
+	}
+	if s.Err() != nil {
+		return nil, s.Err()
+	}
+	return
 }

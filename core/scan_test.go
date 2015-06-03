@@ -44,6 +44,7 @@ func TestScan(t *testing.T) {
 		{"#b", "<a>b"},
 		{"#b\n", "<a>b <l>"},
 		{"#b\n#c", "<a>b <l> <a>c"},
+		{"a", "<s>a"},
 	} {
 		toks, err := scanAll(testcase.s)
 		if err != nil {

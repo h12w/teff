@@ -47,6 +47,8 @@ func (s *Scanner) Scan() bool {
 	case '\t', ' ':
 	case '\r', '\n':
 		return s.newline()
+	default:
+		return s.lineString()
 	}
 	return false
 }
@@ -62,7 +64,12 @@ func (s *Scanner) newline() bool {
 }
 
 func (s *Scanner) annotation() bool {
-	rs := []rune{}
+	s.tok = Token{Type: Annotation, Value: s.inline()[1:]}
+	return true
+}
+
+func (s *Scanner) inline() string {
+	rs := []rune{s.ch}
 	for s.next() {
 		if s.ch == '\r' || s.ch == '\n' {
 			s.prev()
@@ -70,7 +77,11 @@ func (s *Scanner) annotation() bool {
 		}
 		rs = append(rs, s.ch)
 	}
-	s.tok = Token{Type: Annotation, Value: string(rs)}
+	return string(rs)
+}
+
+func (s *Scanner) lineString() bool {
+	s.tok = Token{Type: LineString, Value: s.inline()}
 	return true
 }
 

@@ -43,31 +43,31 @@ in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
 U+0020 (space) are invalid and should not appear in a TEFF file.
 
-    char_visible   ::= [^\x00-\x20]
-    char_space     ::= [ \t]
-    char_inline    ::= char_visible | char_space
-    char_break     ::= [\r\n]
-    spaces         ::= char_space+
-    EOF            ::= <end of file>
+    char_visible    ::= [^\x00-\x20]
+    char_space      ::= [ \t]
+    char_inline     ::= char_visible | char_space
+    char_break      ::= [\r\n]
+    EOF             ::= <end of file>
 
-TEFF tokens:
-
-    newline        ::= char_break | "\r\n"
-    annotation     ::= "#" char_inline*
-    line_string    ::= char_visible+ char_inline*
-    indent         ::= <lead spaces longer than the lead spaces of the previous line>
-    unindent       ::= <lead spaces shorter than the lead spaces of the previous line,
-                        an indent token must be paired with an unindent token,
-                        so multiple unindent tokens could be emitted to cancel
-                        indent tokens of previous lines in reverse order to the
-                        line whose lead spaces is the same as the current line>
+    spaces          ::= char_space+
+    newline         ::= char_break | "\r\n"
+    annotation      ::= "#" char_inline*
+    line_string     ::= char_visible+ char_inline*
+    indent          ::= previous_indent spaces
+    unindent        ::= <spaces shorter than the spaces of the previous line,
+                         an indent token must be paired with an unindent token,
+                         so multiple unindent tokens could be emitted to cancel
+                         indent tokens of previous lines in reverse order to the
+                         line whose spaces is the same as the current line>
+    previous_indent ::= <`spaces` of the previous indent or unindent token, or
+                         empty for the initial value>
 
 TEFF grammer:
 
-    teff_file      ::= list EOF
-    list           ::= node*
-    node           ::= annotation* value (indent list unindent)?
-    value          ::= line_string
+    teff_file       ::= list EOF
+    list            ::= node*
+    node            ::= annotation* value (indent list unindent)?
+    value           ::= line_string
 
 Extensions
 ----------

@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"io"
+	"strings"
 	"unicode"
 )
 
@@ -14,7 +15,6 @@ type TokenType int
 
 const (
 	Invalid TokenType = iota
-	Newline
 	Annotation
 	LineString
 	Indent
@@ -27,40 +27,78 @@ type Token struct {
 }
 
 type Scanner struct {
-	r   io.RuneScanner
-	ch  rune
-	tok Token
-	err error
+	r       io.RuneScanner
+	ch      rune
+	indents []string
+	indent  string
+	tok     Token
+	toks    []Token
+	err     error
 }
 
 func NewScanner(r io.RuneScanner) *Scanner {
-	return &Scanner{r: r}
+	return &Scanner{r: r, indents: []string{""}, indent: ""}
 }
 
 func (s *Scanner) Scan() bool {
+	if s.err != nil {
+		return false
+	}
+	if len(s.toks) > 0 {
+		s.tok, s.toks = s.toks[0], s.toks[1:]
+		return true
+	}
+	s.indent = string(s.indentSpaces())
+	if s.err != nil {
+		return false
+	}
+	if s.indent == s.lastIndent() {
+		return s.afterIndent()
+	} else if strings.HasPrefix(s.indent, s.lastIndent()) {
+		s.indents = append(s.indents, s.indent)
+		s.tok = Token{Type: Indent}
+		return true
+	} else if len(s.indent) >= len(s.lastIndent()) {
+		s.err = errors.New("mismatch indent")
+		return false
+	}
+	for i := len(s.indents) - 1; i >= 0; i-- {
+		if s.indent == s.indents[i] {
+			s.tok = Token{Type: Unindent}
+			return true
+		}
+		s.toks = append(s.toks, Token{Type: Unindent})
+	}
+	s.err = errors.New("mismatch indent")
+	return false
+}
+func (s *Scanner) lastIndent() string {
+	return s.indents[len(s.indents)-1]
+}
+
+func (s *Scanner) afterIndent() bool {
 	if !s.next() {
 		return false
 	}
 	switch s.ch {
 	case '#':
 		return s.annotation()
-	case '\t', ' ':
 	case '\r', '\n':
-		return s.newline()
+		return s.skipNewline()
 	default:
 		return s.lineString()
 	}
 	return false
 }
 
-func (s *Scanner) newline() bool {
-	s.tok = Token{Type: Newline}
-	if s.ch == '\r' {
-		if s.next() && s.ch != '\n' {
-			return s.prev()
+func (s *Scanner) skipNewline() bool {
+	for s.next() {
+		if s.ch != '\r' && s.ch != '\n' {
+			s.prev()
+			break
 		}
 	}
-	return true
+	return s.Scan()
 }
 
 func (s *Scanner) annotation() bool {
@@ -83,6 +121,18 @@ func (s *Scanner) inline() string {
 func (s *Scanner) lineString() bool {
 	s.tok = Token{Type: LineString, Value: s.inline()}
 	return true
+}
+
+func (s *Scanner) indentSpaces() string {
+	rs := []rune{}
+	for s.next() {
+		if s.ch != ' ' && s.ch != '\t' {
+			s.prev()
+			break
+		}
+		rs = append(rs, s.ch)
+	}
+	return string(rs)
 }
 
 func (s *Scanner) Token() Token {

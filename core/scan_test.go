@@ -12,8 +12,6 @@ var p = fmt.Println
 
 func (t TokenType) String() string {
 	switch t {
-	case Newline:
-		return "l"
 	case Annotation:
 		return "a"
 	case LineString:
@@ -38,17 +36,21 @@ func TestScan(t *testing.T) {
 		s        string
 		expected string
 	}{
-		{"\n", "<l>"},
-		{"\r", "<l>"},
-		{"\r\n", "<l>"},
-		{"\r\r", "<l> <l>"},
-		{"\n\n", "<l> <l>"},
-		{"\n\r", "<l> <l>"},
-		{"#x", "<x:a>"},
-		{"#x\n#y", "<x:a> <l> <y:a>"},
+		{"\r", ""},
+		{"\n", ""},
+		{"\r\n", ""},
+		{"\n\r", ""},
+		{"\n\n", ""},
 		{"x", "<x:s>"},
-		{"x\ny", "<x:s> <l> <y:s>"},
+		{"x\ny", "<x:s> <y:s>"},
+		{"#x", "<x:a>"},
+		{"#x\n#y", "<x:a> <y:a>"},
+
+		{"x\n\ty", "<x:s> <in> <y:s> <un>"},
 	} {
+		if i != 9 {
+			continue
+		}
 		toks, err := scanAll(testcase.s)
 		if err != nil {
 			t.Fatalf("testcase %d: %v", i, err)

@@ -40,12 +40,19 @@ func NewScanner(r io.RuneScanner) *Scanner {
 }
 
 func (s *Scanner) Scan() bool {
-	if s.err != nil {
-		return false
-	}
 	if len(s.toks) > 0 {
 		s.tok, s.toks = s.toks[0], s.toks[1:]
 		return true
+	} else if s.err == io.EOF && len(s.indents) > 1 {
+		s.tok = Token{Type: Unindent}
+		for i := 0; i < len(s.indents)-2; i++ {
+			s.toks = append(s.toks, s.tok)
+		}
+		s.indents = s.indents[:1]
+		return true
+	}
+	if s.err != nil {
+		return false
 	}
 	return s.scanLine()
 }
@@ -73,6 +80,7 @@ func (s *Scanner) scanLine() bool {
 			for i := 0; i < -n; i++ {
 				s.toks = append(s.toks, s.tok)
 			}
+			return true
 		}
 	}
 	s.err = errors.New("mismatch indent")

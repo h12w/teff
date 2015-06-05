@@ -30,14 +30,13 @@ type Scanner struct {
 	r       io.RuneScanner
 	ch      rune
 	indents []string
-	indent  string
 	tok     Token
 	toks    []Token
 	err     error
 }
 
 func NewScanner(r io.RuneScanner) *Scanner {
-	return &Scanner{r: r, indents: []string{""}, indent: ""}
+	return &Scanner{r: r, indents: []string{""}}
 }
 
 func (s *Scanner) Scan() bool {
@@ -48,85 +47,109 @@ func (s *Scanner) Scan() bool {
 		s.tok, s.toks = s.toks[0], s.toks[1:]
 		return true
 	}
-	s.indent = string(s.indentSpaces())
-	if s.err != nil {
+	return s.scanLine()
+}
+
+func (s *Scanner) scanLine() bool {
+	indent, ok := s.scanIndent()
+	if !ok {
 		return false
 	}
-	if s.indent == s.lastIndent() {
-		return s.afterIndent()
-	} else if strings.HasPrefix(s.indent, s.lastIndent()) {
-		s.indents = append(s.indents, s.indent)
-		s.tok = Token{Type: Indent}
-		return true
-	} else if len(s.indent) >= len(s.lastIndent()) {
-		s.err = errors.New("mismatch indent")
-		return false
-	}
-	for i := len(s.indents) - 1; i >= 0; i-- {
-		if s.indent == s.indents[i] {
+	if n, ok := s.calcIndent(indent); ok {
+		switch n {
+		case 0: // same
+			s.tok, ok = s.afterIndent()
+			return ok
+		case 1: // indent
+			s.indents = append(s.indents, indent)
+			s.tok = Token{Type: Indent}
+			if tok, ok := s.afterIndent(); ok {
+				s.toks = append(s.toks, tok)
+				return true
+			}
+			return false
+		default: // unindent
 			s.tok = Token{Type: Unindent}
-			return true
+			for i := 0; i < -n; i++ {
+				s.toks = append(s.toks, s.tok)
+			}
 		}
-		s.toks = append(s.toks, Token{Type: Unindent})
 	}
 	s.err = errors.New("mismatch indent")
 	return false
 }
-func (s *Scanner) lastIndent() string {
-	return s.indents[len(s.indents)-1]
+func (s *Scanner) scanIndent() (indent string, ok bool) {
+	for {
+		indent, ok = s.indentSpaces()
+		if !ok {
+			return
+		}
+		var hasNewline bool
+		hasNewline, ok = s.newlineSpaces()
+		if !ok {
+			return
+		} else if !hasNewline {
+			ok = true
+			return
+		}
+	}
+	return
+}
+func (s *Scanner) newlineSpaces() (hasNewline bool, ok bool) {
+	for s.next() {
+		switch s.ch {
+		case '\r', '\n':
+			hasNewline = true
+		default:
+			s.prev()
+			return hasNewline, true
+		}
+	}
+	return hasNewline, false
+}
+func (s *Scanner) indentSpaces() (indent string, ok bool) {
+	rs := []rune{}
+	for s.next() {
+		if s.ch != ' ' && s.ch != '\t' {
+			s.prev()
+			return string(rs), true
+		}
+		rs = append(rs, s.ch)
+	}
+	return "", false
+}
+func (s *Scanner) calcIndent(indent string) (int, bool) {
+	last := s.indents[len(s.indents)-1]
+	if indent == last {
+		return 0, true
+	} else if strings.HasPrefix(indent, last) {
+		return 1, true
+	}
+	for i := 1; i < len(s.indents); i++ {
+		if indent == s.indents[len(s.indents)-i-1] {
+			return -i, true
+		}
+	}
+	return 0, false
 }
 
-func (s *Scanner) afterIndent() bool {
+func (s *Scanner) afterIndent() (tok Token, ok bool) {
 	if !s.next() {
-		return false
+		ok = false
+		return
 	}
 	switch s.ch {
 	case '#':
-		return s.annotation()
-	case '\r', '\n':
-		return s.skipNewline()
+		tok, ok = Token{Type: Annotation, Value: s.inline()[1:]}, true
 	default:
-		return s.lineString()
+		tok, ok = Token{Type: LineString, Value: s.inline()}, true
 	}
-	return false
+	return
 }
-
-func (s *Scanner) skipNewline() bool {
-	for s.next() {
-		if s.ch != '\r' && s.ch != '\n' {
-			s.prev()
-			break
-		}
-	}
-	return s.Scan()
-}
-
-func (s *Scanner) annotation() bool {
-	s.tok = Token{Type: Annotation, Value: s.inline()[1:]}
-	return true
-}
-
 func (s *Scanner) inline() string {
 	rs := []rune{s.ch}
 	for s.next() {
 		if s.ch == '\r' || s.ch == '\n' {
-			s.prev()
-			break
-		}
-		rs = append(rs, s.ch)
-	}
-	return string(rs)
-}
-
-func (s *Scanner) lineString() bool {
-	s.tok = Token{Type: LineString, Value: s.inline()}
-	return true
-}
-
-func (s *Scanner) indentSpaces() string {
-	rs := []rune{}
-	for s.next() {
-		if s.ch != ' ' && s.ch != '\t' {
 			s.prev()
 			break
 		}

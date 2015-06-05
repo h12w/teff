@@ -41,7 +41,6 @@ func NewScanner(r io.RuneScanner) *Scanner {
 		indents: []string{""},
 		toks:    []Token{Token{Type: _SOF}},
 	}
-	s.reader.setError = s.setError
 	return s
 }
 
@@ -59,8 +58,9 @@ func (s *Scanner) Scan() bool {
 }
 
 func (s *Scanner) scanLine() {
-	indent, ok := s.readIndent()
-	if !ok {
+	indent, err := s.readIndent()
+	if err != nil {
+		s.err = err
 		return
 	}
 	n, ok := s.calcIndent(indent)
@@ -100,11 +100,14 @@ func (s *Scanner) calcIndent(indent string) (int, bool) {
 }
 
 func (s *Scanner) afterIndent() {
-	if s.ch == '#' {
-		s.addTok(Token{Type: Annotation, Value: s.readLine()[1:]})
+	isAnnotation := (s.ch == '#')
+	line, err := s.readLine()
+	if isAnnotation {
+		s.addTok(Token{Type: Annotation, Value: line[1:]})
 	} else {
-		s.addTok(Token{Type: LineString, Value: s.readLine()})
+		s.addTok(Token{Type: LineString, Value: line})
 	}
+	s.err = err
 }
 
 func (s *Scanner) handleEOF() {
@@ -139,12 +142,12 @@ func (s *Scanner) Err() error {
 }
 
 type reader struct {
-	r        io.RuneScanner
-	ch       rune
-	setError func(error)
+	r   io.RuneScanner
+	ch  rune
+	err error
 }
 
-func (s *reader) readLine() string {
+func (s *reader) readLine() (string, error) {
 	rs := []rune{}
 	for s.next() {
 		if s.ch == '\r' || s.ch == '\n' {
@@ -153,21 +156,23 @@ func (s *reader) readLine() string {
 		}
 		rs = append(rs, s.ch)
 	}
-	return string(rs)
+	return string(rs), s.err
 }
 
-func (s *reader) readIndent() (indent string, ok bool) {
+func (s *reader) readIndent() (indent string, err error) {
 	for {
+		var ok bool
 		indent, ok = s.indentSpaces()
 		if !ok {
+			err = s.err
 			return
 		}
 		var hasNewline bool
 		hasNewline, ok = s.skipLineBreaks()
 		if !ok {
+			err = s.err
 			return
 		} else if !hasNewline {
-			ok = true
 			return
 		}
 	}
@@ -200,17 +205,17 @@ func (s *reader) next() bool {
 	var err error
 	s.ch, _, err = s.r.ReadRune()
 	if err != nil {
-		s.setError(err)
+		s.err = err
 		return false
 	}
 	switch s.ch {
 	case '\t', ' ', '\r', '\n':
 	case unicode.ReplacementChar:
-		s.setError(errInvalidCodePoint)
+		s.err = errInvalidCodePoint
 		return false
 	default:
 		if '\x00' <= s.ch && s.ch <= '\x19' {
-			s.setError(errInvalidCodePoint)
+			s.err = errInvalidCodePoint
 			return false
 		}
 	}
@@ -218,7 +223,6 @@ func (s *reader) next() bool {
 }
 
 func (s *reader) prev() bool {
-	err := s.r.UnreadRune()
-	s.setError(err)
-	return err == nil
+	s.err = s.r.UnreadRune()
+	return s.err == nil
 }

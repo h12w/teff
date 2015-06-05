@@ -51,7 +51,7 @@ func TestScan(t *testing.T) {
 		{"x\n\ty", "<x:s> <in> <y:s> <un> <eof>"},
 		{"x\n\ty\n", "<x:s> <in> <y:s> <un> <eof>"},
 		{"x\n\ty\nz", "<x:s> <in> <y:s> <un> <z:s> <eof>"},
-		//{"x\n\ty\n\t\tz", "<x:s> <in> <y:s> <un> <eof>"},
+		{"1\n\t2\n\t\t3\n\t\t\t4", "<1:s> <in> <2:s> <in> <3:s> <in> <4:s> <un> <un> <un> <eof>"},
 	} {
 		toks, err := scanAll(testcase.s)
 		if err != nil {

@@ -29,19 +29,20 @@ type Token struct {
 }
 
 type Scanner struct {
-	r       io.RuneScanner
-	ch      rune
+	reader
 	indents []string
 	toks    []Token
 	err     error
 }
 
 func NewScanner(r io.RuneScanner) *Scanner {
-	return &Scanner{
-		r:       r,
+	s := &Scanner{
+		reader:  reader{r: r},
 		indents: []string{""},
 		toks:    []Token{Token{Type: _SOF}},
 	}
+	s.reader.setError = s.setError
+	return s
 }
 
 func (s *Scanner) Scan() bool {
@@ -58,7 +59,7 @@ func (s *Scanner) Scan() bool {
 }
 
 func (s *Scanner) scanLine() {
-	indent, ok := s.scanIndent()
+	indent, ok := s.readIndent()
 	if !ok {
 		return
 	}
@@ -83,46 +84,6 @@ func (s *Scanner) scanLine() {
 	}
 }
 
-func (s *Scanner) scanIndent() (indent string, ok bool) {
-	for {
-		indent, ok = s.indentSpaces()
-		if !ok {
-			return
-		}
-		var hasNewline bool
-		hasNewline, ok = s.newlineSpaces()
-		if !ok {
-			return
-		} else if !hasNewline {
-			ok = true
-			return
-		}
-	}
-}
-func (s *Scanner) newlineSpaces() (hasNewline bool, ok bool) {
-	for s.next() {
-		switch s.ch {
-		case '\r', '\n':
-			hasNewline = true
-		default:
-			s.prev()
-			return hasNewline, true
-		}
-	}
-	return hasNewline, false
-}
-func (s *Scanner) indentSpaces() (indent string, ok bool) {
-	rs := []rune{}
-	for s.next() {
-		if s.ch != ' ' && s.ch != '\t' {
-			s.prev()
-			return string(rs), true
-		}
-		rs = append(rs, s.ch)
-	}
-	return "", false
-}
-
 func (s *Scanner) calcIndent(indent string) (int, bool) {
 	last := s.indents[len(s.indents)-1]
 	if indent == last {
@@ -140,21 +101,10 @@ func (s *Scanner) calcIndent(indent string) (int, bool) {
 
 func (s *Scanner) afterIndent() {
 	if s.ch == '#' {
-		s.addTok(Token{Type: Annotation, Value: s.inline()[1:]})
+		s.addTok(Token{Type: Annotation, Value: s.readLine()[1:]})
 	} else {
-		s.addTok(Token{Type: LineString, Value: s.inline()})
+		s.addTok(Token{Type: LineString, Value: s.readLine()})
 	}
-}
-func (s *Scanner) inline() string {
-	rs := []rune{}
-	for s.next() {
-		if s.ch == '\r' || s.ch == '\n' {
-			s.prev()
-			break
-		}
-		rs = append(rs, s.ch)
-	}
-	return string(rs)
 }
 
 func (s *Scanner) handleEOF() {
@@ -177,28 +127,8 @@ func (s *Scanner) Token() Token {
 	return s.toks[0]
 }
 
-func (s *Scanner) next() bool {
-	s.ch, _, s.err = s.r.ReadRune()
-	if s.err != nil {
-		return false
-	}
-	switch s.ch {
-	case '\t', ' ', '\r', '\n':
-	case unicode.ReplacementChar:
-		s.err = errInvalidCodePoint
-		return false
-	default:
-		if '\x00' <= s.ch && s.ch <= '\x19' {
-			s.err = errInvalidCodePoint
-			return false
-		}
-	}
-	return true
-}
-
-func (s *Scanner) prev() bool {
-	s.err = s.r.UnreadRune()
-	return s.err == nil
+func (s *Scanner) setError(err error) {
+	s.err = err
 }
 
 func (s *Scanner) Err() error {
@@ -206,4 +136,89 @@ func (s *Scanner) Err() error {
 		return nil
 	}
 	return s.err
+}
+
+type reader struct {
+	r        io.RuneScanner
+	ch       rune
+	setError func(error)
+}
+
+func (s *reader) readLine() string {
+	rs := []rune{}
+	for s.next() {
+		if s.ch == '\r' || s.ch == '\n' {
+			s.prev()
+			break
+		}
+		rs = append(rs, s.ch)
+	}
+	return string(rs)
+}
+
+func (s *reader) readIndent() (indent string, ok bool) {
+	for {
+		indent, ok = s.indentSpaces()
+		if !ok {
+			return
+		}
+		var hasNewline bool
+		hasNewline, ok = s.skipLineBreaks()
+		if !ok {
+			return
+		} else if !hasNewline {
+			ok = true
+			return
+		}
+	}
+}
+func (s *reader) skipLineBreaks() (hasNewline bool, ok bool) {
+	for s.next() {
+		switch s.ch {
+		case '\r', '\n':
+			hasNewline = true
+		default:
+			s.prev()
+			return hasNewline, true
+		}
+	}
+	return hasNewline, false
+}
+func (s *reader) indentSpaces() (indent string, ok bool) {
+	rs := []rune{}
+	for s.next() {
+		if s.ch != ' ' && s.ch != '\t' {
+			s.prev()
+			return string(rs), true
+		}
+		rs = append(rs, s.ch)
+	}
+	return "", false
+}
+
+func (s *reader) next() bool {
+	var err error
+	s.ch, _, err = s.r.ReadRune()
+	if err != nil {
+		s.setError(err)
+		return false
+	}
+	switch s.ch {
+	case '\t', ' ', '\r', '\n':
+	case unicode.ReplacementChar:
+		s.setError(errInvalidCodePoint)
+		return false
+	default:
+		if '\x00' <= s.ch && s.ch <= '\x19' {
+			s.setError(errInvalidCodePoint)
+			return false
+		}
+	}
+	return true
+}
+
+func (s *reader) prev() bool {
+	err := s.r.UnreadRune()
+	s.setError(err)
+	return err == nil
 }

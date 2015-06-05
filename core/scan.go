@@ -76,12 +76,13 @@ func (s *Scanner) scanLine() {
 		s.afterIndent()
 	default: // unindent
 		n = -n
+		s.indents = s.indents[:len(s.indents)-n]
 		for i := 0; i < n; i++ {
 			s.addTok(Token{Type: Unindent})
 		}
-		s.indents = s.indents[:len(s.indents)-n]
 	}
 }
+
 func (s *Scanner) scanIndent() (indent string, ok bool) {
 	for {
 		indent, ok = s.indentSpaces()
@@ -97,7 +98,6 @@ func (s *Scanner) scanIndent() (indent string, ok bool) {
 			return
 		}
 	}
-	return
 }
 func (s *Scanner) newlineSpaces() (hasNewline bool, ok bool) {
 	for s.next() {
@@ -122,6 +122,7 @@ func (s *Scanner) indentSpaces() (indent string, ok bool) {
 	}
 	return "", false
 }
+
 func (s *Scanner) calcIndent(indent string) (int, bool) {
 	last := s.indents[len(s.indents)-1]
 	if indent == last {
@@ -138,9 +139,6 @@ func (s *Scanner) calcIndent(indent string) (int, bool) {
 }
 
 func (s *Scanner) afterIndent() {
-	if !s.next() {
-		return
-	}
 	if s.ch == '#' {
 		s.addTok(Token{Type: Annotation, Value: s.inline()[1:]})
 	} else {
@@ -148,7 +146,7 @@ func (s *Scanner) afterIndent() {
 	}
 }
 func (s *Scanner) inline() string {
-	rs := []rune{s.ch}
+	rs := []rune{}
 	for s.next() {
 		if s.ch == '\r' || s.ch == '\n' {
 			s.prev()
@@ -176,10 +174,7 @@ func (s *Scanner) addTok(tok Token) {
 }
 
 func (s *Scanner) Token() Token {
-	if len(s.toks) > 0 {
-		return s.toks[0]
-	}
-	return Token{}
+	return s.toks[0]
 }
 
 func (s *Scanner) next() bool {

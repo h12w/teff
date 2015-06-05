@@ -50,6 +50,8 @@ func TestScan(t *testing.T) {
 
 		{"x\n\ty", "<x:s> <in> <y:s> <un> <eof>"},
 		{"x\n\ty\n", "<x:s> <in> <y:s> <un> <eof>"},
+		{"x\n\ty\nz", "<x:s> <in> <y:s> <un> <z:s> <eof>"},
+		//{"x\n\ty\n\t\tz", "<x:s> <in> <y:s> <un> <eof>"},
 	} {
 		toks, err := scanAll(testcase.s)
 		if err != nil {
@@ -57,7 +59,7 @@ func TestScan(t *testing.T) {
 		}
 		actual := strings.Join(toks, " ")
 		if actual != testcase.expected {
-			t.Fatalf("testcase %d: expect %s, got %s", i, testcase.expected, actual)
+			t.Fatalf("testcase %d: expect\n%s\ngot\n%s\n", i, testcase.expected, actual)
 		}
 	}
 }

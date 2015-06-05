@@ -20,6 +20,7 @@ const (
 	Indent
 	Unindent
 	EOF
+	_SOF
 )
 
 type Token struct {
@@ -36,13 +37,15 @@ type Scanner struct {
 }
 
 func NewScanner(r io.RuneScanner) *Scanner {
-	return &Scanner{r: r, indents: []string{""}}
+	return &Scanner{
+		r:       r,
+		indents: []string{""},
+		toks:    []Token{Token{Type: _SOF}},
+	}
 }
 
 func (s *Scanner) Scan() bool {
-	if len(s.toks) > 0 {
-		s.toks = s.toks[1:]
-	}
+	s.toks = s.toks[1:]
 	if len(s.toks) > 0 {
 		return true
 	}
@@ -50,20 +53,8 @@ func (s *Scanner) Scan() bool {
 		return false
 	}
 	s.scanLine()
-	if s.err == io.EOF {
-		if len(s.indents) > 1 {
-			for i := 0; i < len(s.indents)-1; i++ {
-				s.addTok(Token{Type: Unindent})
-			}
-			s.indents = s.indents[:1]
-		}
-		s.addTok(Token{Type: EOF})
-	}
+	s.handleEOF()
 	return len(s.toks) > 0
-}
-
-func (s *Scanner) addTok(tok Token) {
-	s.toks = append(s.toks, tok)
 }
 
 func (s *Scanner) scanLine() {
@@ -84,9 +75,11 @@ func (s *Scanner) scanLine() {
 		s.addTok(Token{Type: Indent})
 		s.afterIndent()
 	default: // unindent
-		for i := 0; i <= -n; i++ {
+		n = -n
+		for i := 0; i < n; i++ {
 			s.addTok(Token{Type: Unindent})
 		}
+		s.indents = s.indents[:len(s.indents)-n]
 	}
 }
 func (s *Scanner) scanIndent() (indent string, ok bool) {
@@ -164,6 +157,22 @@ func (s *Scanner) inline() string {
 		rs = append(rs, s.ch)
 	}
 	return string(rs)
+}
+
+func (s *Scanner) handleEOF() {
+	if s.err == io.EOF {
+		if len(s.indents) > 1 {
+			for i := 0; i < len(s.indents)-1; i++ {
+				s.addTok(Token{Type: Unindent})
+			}
+			s.indents = s.indents[:1]
+		}
+		s.addTok(Token{Type: EOF})
+	}
+}
+
+func (s *Scanner) addTok(tok Token) {
+	s.toks = append(s.toks, tok)
 }
 
 func (s *Scanner) Token() Token {

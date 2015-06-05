@@ -30,31 +30,40 @@ type Token struct {
 
 type Scanner struct {
 	reader
-	indents []string
-	toks    []Token
-	err     error
+	indenter
+	tokenQueue
+	err error
 }
 
 func NewScanner(r io.RuneScanner) *Scanner {
 	s := &Scanner{
-		reader:  reader{r: r},
-		indents: []string{""},
-		toks:    []Token{Token{Type: _SOF}},
+		reader: reader{r: r},
+		indenter: indenter{
+			indents: []string{""},
+		},
+		tokenQueue: tokenQueue{
+			toks: []Token{Token{Type: _SOF}},
+		},
 	}
 	return s
 }
 
 func (s *Scanner) Scan() bool {
-	s.toks = s.toks[1:]
-	if len(s.toks) > 0 {
+	s.popTok()
+	if s.tokCount() > 0 {
 		return true
 	}
 	if s.err != nil {
 		return false
 	}
 	s.scanLine()
-	s.handleEOF()
-	return len(s.toks) > 0
+	if s.err == io.EOF {
+		for i := 0; i < s.eofIndentLevel(); i++ {
+			s.pushTok(Token{Type: Unindent})
+		}
+		s.pushTok(Token{Type: EOF})
+	}
+	return s.tokCount() > 0
 }
 
 func (s *Scanner) scanLine() {
@@ -63,75 +72,21 @@ func (s *Scanner) scanLine() {
 		s.err = err
 		return
 	}
-	n, ok := s.calcIndent(indent)
-	if !ok {
-		s.err = errors.New("mismatch indent")
+	indentType, n, err := s.indentLevel(indent)
+	if err != nil {
+		s.err = err
 		return
 	}
-	switch n {
-	case 0: // same
-		s.afterIndent()
-	case 1: // indent
-		s.indents = append(s.indents, indent)
-		s.addTok(Token{Type: Indent})
-		s.afterIndent()
-	default: // unindent
-		n = -n
-		s.indents = s.indents[:len(s.indents)-n]
-		for i := 0; i < n; i++ {
-			s.addTok(Token{Type: Unindent})
-		}
+	for i := 0; i < n; i++ {
+		s.pushTok(Token{Type: indentType})
 	}
-}
-
-func (s *Scanner) calcIndent(indent string) (int, bool) {
-	last := s.indents[len(s.indents)-1]
-	if indent == last {
-		return 0, true
-	} else if strings.HasPrefix(indent, last) {
-		return 1, true
-	}
-	for i := 1; i < len(s.indents); i++ {
-		if indent == s.indents[len(s.indents)-i-1] {
-			return -i, true
-		}
-	}
-	return 0, false
-}
-
-func (s *Scanner) afterIndent() {
-	isAnnotation := (s.ch == '#')
-	line, err := s.readLine()
-	if isAnnotation {
-		s.addTok(Token{Type: Annotation, Value: line[1:]})
+	var line string
+	line, s.err = s.readLine()
+	if line[0] == '#' {
+		s.pushTok(Token{Type: Annotation, Value: line[1:]})
 	} else {
-		s.addTok(Token{Type: LineString, Value: line})
+		s.pushTok(Token{Type: LineString, Value: line})
 	}
-	s.err = err
-}
-
-func (s *Scanner) handleEOF() {
-	if s.err == io.EOF {
-		if len(s.indents) > 1 {
-			for i := 0; i < len(s.indents)-1; i++ {
-				s.addTok(Token{Type: Unindent})
-			}
-			s.indents = s.indents[:1]
-		}
-		s.addTok(Token{Type: EOF})
-	}
-}
-
-func (s *Scanner) addTok(tok Token) {
-	s.toks = append(s.toks, tok)
-}
-
-func (s *Scanner) Token() Token {
-	return s.toks[0]
-}
-
-func (s *Scanner) setError(err error) {
-	s.err = err
 }
 
 func (s *Scanner) Err() error {
@@ -150,12 +105,14 @@ type reader struct {
 func (s *reader) readLine() (string, error) {
 	rs := []rune{}
 	for s.next() {
-		if s.ch == '\r' || s.ch == '\n' {
+		switch s.ch {
+		case '\r', '\n':
 			s.prev()
-			break
+			goto ret
 		}
 		rs = append(rs, s.ch)
 	}
+ret:
 	return string(rs), s.err
 }
 
@@ -192,7 +149,9 @@ func (s *reader) skipLineBreaks() (hasNewline bool, ok bool) {
 func (s *reader) indentSpaces() (indent string, ok bool) {
 	rs := []rune{}
 	for s.next() {
-		if s.ch != ' ' && s.ch != '\t' {
+		switch s.ch {
+		case ' ', '\t':
+		default:
 			s.prev()
 			return string(rs), true
 		}
@@ -225,4 +184,54 @@ func (s *reader) next() bool {
 func (s *reader) prev() bool {
 	s.err = s.r.UnreadRune()
 	return s.err == nil
+}
+
+type indenter struct {
+	indents []string
+}
+
+func (s *indenter) indentLevel(indent string) (TokenType, int, error) {
+	last := s.indents[len(s.indents)-1]
+	if indent == last {
+		return 0, 0, nil
+	} else if strings.HasPrefix(indent, last) {
+		s.indents = append(s.indents, indent)
+		return Indent, 1, nil
+	}
+	for i := 1; i < len(s.indents); i++ {
+		if indent == s.indents[len(s.indents)-i-1] {
+			s.indents = s.indents[:len(s.indents)-i]
+			return Unindent, i, nil
+		}
+	}
+	return 0, 0, errors.New("mismatch indent")
+}
+
+func (s *indenter) eofIndentLevel() int {
+	if len(s.indents) > 1 {
+		n := len(s.indents) - 1
+		s.indents = s.indents[:1]
+		return n
+	}
+	return 0
+}
+
+type tokenQueue struct {
+	toks []Token
+}
+
+func (s *tokenQueue) Token() Token {
+	return s.toks[0]
+}
+
+func (s *tokenQueue) pushTok(tok Token) {
+	s.toks = append(s.toks, tok)
+}
+
+func (s *tokenQueue) popTok() {
+	s.toks = s.toks[1:]
+}
+
+func (s *tokenQueue) tokCount() int {
+	return len(s.toks)
 }

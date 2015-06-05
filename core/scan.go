@@ -41,55 +41,53 @@ func NewScanner(r io.RuneScanner) *Scanner {
 
 func (s *Scanner) Scan() bool {
 	if len(s.toks) > 0 {
+		s.toks = s.toks[1:]
+	}
+	if len(s.toks) > 0 {
 		return true
 	}
-
 	if s.err != nil {
-		return len(s.toks) > 0
+		return false
 	}
 	s.scanLine()
-	if s.err == io.EOF && len(s.indents) > 1 {
-		for i := 0; i < len(s.indents)-1; i++ {
-			s.setToken(Token{Type: Unindent})
-		}
-		s.indents = s.indents[:1]
-	}
 	if s.err == io.EOF {
-		s.setToken(Token{Type: EOF})
+		if len(s.indents) > 1 {
+			for i := 0; i < len(s.indents)-1; i++ {
+				s.addTok(Token{Type: Unindent})
+			}
+			s.indents = s.indents[:1]
+		}
+		s.addTok(Token{Type: EOF})
 	}
 	return len(s.toks) > 0
 }
 
-func (s *Scanner) setToken(tok Token) {
+func (s *Scanner) addTok(tok Token) {
 	s.toks = append(s.toks, tok)
 }
 
-func (s *Scanner) scanLine() bool {
+func (s *Scanner) scanLine() {
 	indent, ok := s.scanIndent()
 	if !ok {
-		return false
+		return
 	}
-	if n, ok := s.calcIndent(indent); ok {
-		switch n {
-		case 0: // same
-			ok = s.afterIndent()
-			return ok
-		case 1: // indent
-			s.indents = append(s.indents, indent)
-			s.setToken(Token{Type: Indent})
-			if ok := s.afterIndent(); ok {
-				return true
-			}
-			return false
-		default: // unindent
-			for i := 0; i <= -n; i++ {
-				s.setToken(Token{Type: Unindent})
-			}
-			return true
+	n, ok := s.calcIndent(indent)
+	if !ok {
+		s.err = errors.New("mismatch indent")
+		return
+	}
+	switch n {
+	case 0: // same
+		s.afterIndent()
+	case 1: // indent
+		s.indents = append(s.indents, indent)
+		s.addTok(Token{Type: Indent})
+		s.afterIndent()
+	default: // unindent
+		for i := 0; i <= -n; i++ {
+			s.addTok(Token{Type: Unindent})
 		}
 	}
-	s.err = errors.New("mismatch indent")
-	return false
 }
 func (s *Scanner) scanIndent() (indent string, ok bool) {
 	for {
@@ -146,17 +144,15 @@ func (s *Scanner) calcIndent(indent string) (int, bool) {
 	return 0, false
 }
 
-func (s *Scanner) afterIndent() bool {
+func (s *Scanner) afterIndent() {
 	if !s.next() {
-		return false
+		return
 	}
-	switch s.ch {
-	case '#':
-		s.setToken(Token{Type: Annotation, Value: s.inline()[1:]})
-	default:
-		s.setToken(Token{Type: LineString, Value: s.inline()})
+	if s.ch == '#' {
+		s.addTok(Token{Type: Annotation, Value: s.inline()[1:]})
+	} else {
+		s.addTok(Token{Type: LineString, Value: s.inline()})
 	}
-	return true
 }
 func (s *Scanner) inline() string {
 	rs := []rune{s.ch}
@@ -172,9 +168,6 @@ func (s *Scanner) inline() string {
 
 func (s *Scanner) Token() Token {
 	if len(s.toks) > 0 {
-		defer func() {
-			s.toks = s.toks[1:]
-		}()
 		return s.toks[0]
 	}
 	return Token{}

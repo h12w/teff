@@ -20,6 +20,8 @@ func (t TokenType) String() string {
 		return "in"
 	case Unindent:
 		return "un"
+	case EOF:
+		return "eof"
 	}
 	return "?"
 }
@@ -36,21 +38,19 @@ func TestScan(t *testing.T) {
 		s        string
 		expected string
 	}{
-		{"\r", ""},
-		{"\n", ""},
-		{"\r\n", ""},
-		{"\n\r", ""},
-		{"\n\n", ""},
-		{"x", "<x:s>"},
-		{"x\ny", "<x:s> <y:s>"},
-		{"#x", "<x:a>"},
-		{"#x\n#y", "<x:a> <y:a>"},
+		{"\r", "<eof>"},
+		{"\n", "<eof>"},
+		{"\r\n", "<eof>"},
+		{"\n\r", "<eof>"},
+		{"\n\n", "<eof>"},
+		{"x", "<x:s> <eof>"},
+		{"x\ny", "<x:s> <y:s> <eof>"},
+		{"#x", "<x:a> <eof>"},
+		{"#x\n#y", "<x:a> <y:a> <eof>"},
 
-		{"x\n\ty", "<x:s> <in> <y:s> <un>"},
+		{"x\n\ty", "<x:s> <in> <y:s> <un> <eof>"},
+		{"x\n\ty\n", "<x:s> <in> <y:s> <un> <eof>"},
 	} {
-		if i != 9 {
-			continue
-		}
 		toks, err := scanAll(testcase.s)
 		if err != nil {
 			t.Fatalf("testcase %d: %v", i, err)

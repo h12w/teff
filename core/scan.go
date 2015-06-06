@@ -67,9 +67,9 @@ func (s *Scanner) Scan() bool {
 }
 
 func (s *Scanner) scanLine() {
-	indent, err := s.readIndent()
-	if err != nil {
-		s.err = err
+	var indent string
+	indent, s.err = s.readIndent()
+	if s.err != nil {
 		return
 	}
 	indentType, n, err := s.indentLevel(indent)

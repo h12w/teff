@@ -36,7 +36,7 @@ type Scanner struct {
 }
 
 func NewScanner(r io.RuneScanner) *Scanner {
-	s := &Scanner{
+	return &Scanner{
 		reader: reader{r: r},
 		indenter: indenter{
 			indents: []string{""},
@@ -45,7 +45,6 @@ func NewScanner(r io.RuneScanner) *Scanner {
 			toks: []Token{Token{Type: _SOF}},
 		},
 	}
-	return s
 }
 
 func (s *Scanner) Scan() bool {
@@ -58,7 +57,7 @@ func (s *Scanner) Scan() bool {
 	}
 	s.scanLine()
 	if s.err == io.EOF {
-		for i := 0; i < s.eofIndentLevel(); i++ {
+		for i := 0; i < s.eofUnindentLevel(); i++ {
 			s.pushTok(Token{Type: Unindent})
 		}
 		s.pushTok(Token{Type: EOF})
@@ -108,43 +107,35 @@ func (s *reader) readLine() (string, error) {
 		switch s.ch {
 		case '\r', '\n':
 			s.prev()
-			goto ret
+			return string(rs), nil
 		}
 		rs = append(rs, s.ch)
 	}
-ret:
 	return string(rs), s.err
 }
 
-func (s *reader) readIndent() (indent string, err error) {
+func (s *reader) readIndent() (string, error) {
 	for {
-		var ok bool
-		indent, ok = s.indentSpaces()
+		indent, ok := s.indentSpaces()
 		if !ok {
-			err = s.err
-			return
+			return indent, s.err
 		}
-		var hasNewline bool
-		hasNewline, ok = s.skipLineBreaks()
-		if !ok {
-			err = s.err
-			return
-		} else if !hasNewline {
-			return
+		if ok := s.skipLineBreaks(); !ok {
+			return indent, s.err
 		}
 	}
 }
-func (s *reader) skipLineBreaks() (hasNewline bool, ok bool) {
+func (s *reader) skipLineBreaks() (hasNewline bool) {
 	for s.next() {
 		switch s.ch {
 		case '\r', '\n':
 			hasNewline = true
 		default:
 			s.prev()
-			return hasNewline, true
+			return hasNewline
 		}
 	}
-	return hasNewline, false
+	return false
 }
 func (s *reader) indentSpaces() (indent string, ok bool) {
 	rs := []rune{}
@@ -207,7 +198,7 @@ func (s *indenter) indentLevel(indent string) (TokenType, int, error) {
 	return 0, 0, errors.New("mismatch indent")
 }
 
-func (s *indenter) eofIndentLevel() int {
+func (s *indenter) eofUnindentLevel() int {
 	if len(s.indents) > 1 {
 		n := len(s.indents) - 1
 		s.indents = s.indents[:1]

@@ -9,6 +9,7 @@ import (
 
 var (
 	errInvalidCodePoint = errors.New("invalid code point")
+	errMismatchIndent   = errors.New("mismatch indent")
 )
 
 type TokenType int
@@ -116,46 +117,44 @@ func (s *reader) readLine() (string, error) {
 
 func (s *reader) readIndent() (string, error) {
 	for {
-		indent, ok := s.indentSpaces()
-		if !ok {
+		indent := s.indentSpaces()
+		if s.err != nil {
 			return indent, s.err
 		}
-		if ok := s.skipLineBreaks(); !ok {
+		if !s.skipLineBreaks() {
 			return indent, s.err
 		}
 	}
 }
-func (s *reader) skipLineBreaks() (hasNewline bool) {
+func (s *reader) skipLineBreaks() (isLineBreak bool) {
 	for s.next() {
 		switch s.ch {
 		case '\r', '\n':
-			hasNewline = true
+			isLineBreak = true
 		default:
 			s.prev()
-			return hasNewline
+			return
 		}
 	}
-	return false
+	return
 }
-func (s *reader) indentSpaces() (indent string, ok bool) {
+func (s *reader) indentSpaces() string {
 	rs := []rune{}
 	for s.next() {
 		switch s.ch {
 		case ' ', '\t':
 		default:
 			s.prev()
-			return string(rs), true
+			return string(rs)
 		}
 		rs = append(rs, s.ch)
 	}
-	return "", false
+	return string(rs)
 }
 
 func (s *reader) next() bool {
-	var err error
-	s.ch, _, err = s.r.ReadRune()
-	if err != nil {
-		s.err = err
+	s.ch, _, s.err = s.r.ReadRune()
+	if s.err != nil {
 		return false
 	}
 	switch s.ch {
@@ -195,7 +194,7 @@ func (s *indenter) indentLevel(indent string) (TokenType, int, error) {
 			return Unindent, i, nil
 		}
 	}
-	return 0, 0, errors.New("mismatch indent")
+	return 0, 0, errMismatchIndent
 }
 
 func (s *indenter) eofUnindentLevel() int {

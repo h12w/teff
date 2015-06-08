@@ -11,7 +11,7 @@ func TestParse(t *testing.T) {
 		v List
 		s string
 	}{
-		{List(nil), ""},
+		{List{}, ""},
 		{List{
 			{"a", nil, nil},
 		}, `

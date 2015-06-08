@@ -68,7 +68,7 @@ func (s *Scanner) Scan() bool {
 
 func (s *Scanner) scanLine() {
 	var indent string
-	indent, s.err = s.readIndent()
+	indent, s.err = s.readValidIndent()
 	if s.err != nil {
 		return
 	}
@@ -115,7 +115,9 @@ func (s *reader) readLine() (string, error) {
 	return string(rs), s.err
 }
 
-func (s *reader) readIndent() (string, error) {
+// readValidIndent reads an indent that not ends with line breaks, and skips
+// a line when necessary.
+func (s *reader) readValidIndent() (string, error) {
 	for {
 		indent := s.indentSpaces()
 		if s.err != nil {
@@ -181,10 +183,10 @@ type indenter struct {
 }
 
 func (s *indenter) indentLevel(indent string) (TokenType, int, error) {
-	last := s.indents[len(s.indents)-1]
-	if indent == last {
+	top := s.indents[len(s.indents)-1]
+	if indent == top {
 		return 0, 0, nil
-	} else if strings.HasPrefix(indent, last) {
+	} else if strings.HasPrefix(indent, top) {
 		s.indents = append(s.indents, indent)
 		return Indent, 1, nil
 	}

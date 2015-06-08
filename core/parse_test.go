@@ -12,11 +12,13 @@ func TestParse(t *testing.T) {
 		s string
 	}{
 		{List{}, ""},
+
 		{List{
 			{"a", nil, nil},
 		}, `
 a
 		`},
+
 		{List{
 			{"a", nil, nil},
 			{"b", nil, nil},
@@ -24,6 +26,7 @@ a
 a
 b
 		`},
+
 		{List{
 			{"a", List{
 				{"b", nil, nil},
@@ -33,12 +36,49 @@ b
 				}, nil},
 				{"d", nil, nil},
 			}, nil},
-		}, "a\n\tb\n\tc\n\t\te\n\t\tf\n\td"},
+		}, `
+a
+    b
+    c
+        e
+        f
+    d
+    `},
+
+		{List{
+			{"a", nil, []string{"a1"}},
+		}, `
+#a1
+a
+		`},
+
+		{List{
+			{"a", nil, []string{"a1", "a2"}},
+		}, `
+#a1
+#a2
+a
+		`},
+
+		{List{
+			{"a", nil, []string{"a1", "a2"}},
+			{"b", nil, []string{"b1", "b2"}},
+		}, `
+#a1
+#a2
+a
+#b1
+#b2
+b
+		`},
 	} {
-		testcase.s = strings.TrimSpace(testcase.s)
+		if i != 6 {
+			continue
+		}
+		testcase.s = strings.Trim(testcase.s, "\n")
 		list, err := Parse(strings.NewReader(testcase.s))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("testcase %d, %v", i, err)
 		}
 		if !reflect.DeepEqual(list, testcase.v) {
 			t.Fatalf("testcase %d: expect \n%#v\nbut got \n%#v", i, testcase.v, list)
@@ -50,6 +90,20 @@ func TestParseError(t *testing.T) {
 	for i, testcase := range []string{
 		"\ta",
 		"\x00",
+		`
+    #a
+a
+`,
+		`
+a
+    #b
+b
+`,
+		`
+a
+#b
+    b
+`,
 	} {
 		_, err := Parse(strings.NewReader(testcase))
 		if err == nil {

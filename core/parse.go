@@ -6,23 +6,36 @@ import (
 	"io"
 )
 
-var errSyntax = errors.New("syntax error")
+var (
+	errWrongIndent           = errors.New("syntax error, wrong indent")
+	errAnnotationWithoutNode = errors.New("syntax error, annotation without a node")
+)
 
 func Parse(reader io.Reader) (List, error) {
 	s := newParseStack()
 	scanner := NewScanner(bufio.NewReader(reader))
+	var a []string
 	for scanner.Scan() {
 		tok := scanner.Token()
 		switch tok.Type {
 		case Value:
-			s.top().add(Node{Value: tok.Content})
+			s.top().add(Node{Value: tok.Content, Annotations: a})
+			a = nil
+		case Annotation:
+			a = append(a, tok.Content)
 		case Indent:
+			if len(a) > 0 {
+				return nil, errAnnotationWithoutNode
+			}
 			last := s.top().last()
 			if last == nil {
-				return nil, errSyntax
+				return nil, errWrongIndent
 			}
 			s.push(&last.List)
 		case Unindent:
+			if len(a) > 0 {
+				return nil, errAnnotationWithoutNode
+			}
 			s.pop()
 		}
 	}

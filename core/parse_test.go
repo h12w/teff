@@ -29,21 +29,19 @@ b
 
 		{List{
 			{"a", List{
-				{"b", nil, nil},
-				{"c", List{
-					{"e", nil, nil},
-					{"f", nil, nil},
+				{"b", List{
+					{"c", nil, nil},
 				}, nil},
 				{"d", nil, nil},
 			}, nil},
+			{"e", nil, nil},
 		}, `
 a
     b
-    c
-        e
-        f
+        c
     d
-    `},
+e
+		`},
 
 		{List{
 			{"a", nil, []string{"a1"}},
@@ -72,9 +70,6 @@ a
 b
 		`},
 	} {
-		if i != 6 {
-			continue
-		}
 		testcase.s = strings.Trim(testcase.s, "\n")
 		list, err := Parse(strings.NewReader(testcase.s))
 		if err != nil {

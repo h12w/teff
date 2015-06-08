@@ -91,7 +91,7 @@ the rules described below:
    until the non-top element becomes the top. The number of `unindent` tokens
    emitted is the same as the number of elements popped.
 6. If none of 3 to 5 happens, a syntax error occurs.
-7. When EOF is emitted by the length of the stack is larger than 1, the top of
+7. When `EOF` is emitted but the length of the stack is larger than 1, the top of
    the stack is popped and an `unindent` token is emitted until the length of
    the stack becomes 1.
 

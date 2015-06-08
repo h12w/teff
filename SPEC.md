@@ -47,9 +47,9 @@ Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
 U+0020 (space) are considered invalid and should not appear in a TEFF file.
 
     char_valid      ::= char_inline | char_break
+    char_inline     ::= char_visible | char_space
     char_visible    ::= [^\x00-\x20]
     char_space      ::= [ \t]
-    char_inline     ::= char_visible | char_space
     char_break      ::= [\r\n]
 
 ### Lines
@@ -75,21 +75,21 @@ There are only five types of tokens used by TEFF grammar:
 4. unindent
 5. EOF
 
-Tokens `indent` and `unindent` are emitted from current and previous `indent_space`s, by
-the rules described below:
+Tokens `indent` and `unindent` are emitted by the rules described below:
 
 1. A stack is used to store `indent_space` and controls the emission of
    `indent` & `unindent` tokens.
 2. Initially, an empty value is pushed onto the stack, and then the TEFF file is
-   scanned line by line to get the current `indent_space`.
-3. When the top of the stack is the same as the current `indent_space`, no token
-   is emitted.
-4. When the top of the stack is a prefix of the current `indent_space`, the
-   current `indent_space` is pushed onto the stack, and an `indent` token is emitted.
-5. When the current `indent_space` is the same as one of the non-top elements of
-   the stack, the top of the stack is popped and an `unindent` token is emitted
-   until the non-top element becomes the top. The number of `unindent` tokens
-   emitted is the same as the number of elements popped.
+   scanned line by line to get the `indent_space` of each line.
+3. When the top of the stack is the same as the `indent_space` of the current
+   line, no token is emitted.
+4. When the top of the stack is a prefix of the `indent_space` of the current
+   line, the `indent_space` is pushed onto the stack, and an `indent` token is
+   emitted.
+5. When the `indent_space` of the current line is the same as one of the non-top
+   elements of the stack, the top of the stack is popped and an `unindent` token
+   is emitted until the non-top element becomes the top. The number of `unindent`
+   tokens emitted is the same as the number of elements popped.
 6. If none of 3 to 5 happens, a syntax error occurs.
 7. When `EOF` is emitted but the length of the stack is larger than 1, the top of
    the stack is popped and an `unindent` token is emitted until the length of

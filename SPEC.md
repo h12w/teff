@@ -37,37 +37,66 @@ which is extended with the following definitions:
 
 Core
 ----
+
+### Characters
+
 A TEFF file is a sequence of [Unicode](http://unicode.org/) code points encoded
 in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 
 Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
-U+0020 (space) are invalid and should not appear in a TEFF file.
+U+0020 (space) are considered invalid and should not appear in a TEFF file.
 
+    char_valid      ::= char_inline | char_break
     char_visible    ::= [^\x00-\x20]
     char_space      ::= [ \t]
     char_inline     ::= char_visible | char_space
     char_break      ::= [\r\n]
+
+### Lines
+
+A TEFF file is also a sequence of lines separated by `newline`.
+
+    line            ::= empty_line | valid_line
+    empty_line      ::= char_space* newline
+    newline         ::= char_break | "\r\n" | EOF
     EOF             ::= <end of file>
-
-    spaces          ::= char_space+
-    newline         ::= char_break | "\r\n"
+    valid_line      ::= indent_space (annotation | value) newline
+    indent_space    ::= char_space*
     annotation      ::= "#" char_inline*
-    line_string     ::= char_visible+ char_inline*
-    indent          ::= previous_indent spaces
-    unindent        ::= <spaces shorter than the spaces of the previous line,
-                         an indent token must be paired with an unindent token,
-                         so multiple unindent tokens could be emitted to cancel
-                         indent tokens of previous lines in reverse order to the
-                         line whose spaces is the same as the current line>
-    previous_indent ::= <`spaces` of the previous indent or unindent token, or
-                         empty for the initial value>
+    value           ::= char_visible+ char_inline*
 
-TEFF grammer:
+### Tokens
+
+There are only five types of tokens used by TEFF grammar:
+
+1. value
+2. annotation
+3. indent
+4. unindent
+5. EOF
+
+Tokens `indent` and `unindent` are emitted from current and previous `indent_space`s, by
+the rules described below:
+
+1. A stack is used to store `indent_space` and controls the emission of
+   `indent` & `unindent` tokens.
+2. Initially, an empty value is pushed onto the stack, and then the TEFF file is
+   scanned line by line to get the current `indent_space`.
+3. When the top of the stack is the same as the current `indent_space`, no token
+   is emitted.
+4. When the top of the stack is a prefix of the current `indent_space`, the
+   current `indent_space` is pushed onto the stack, and an `indent` token is emitted.
+5. When the current `indent_space` is the same as one of the non-top elements of
+   the stack, the top of the stack is popped and an `unindent` token is emitted
+   until the non-top element becomes the top. The number of `unindent` tokens
+   emitted is the same as the number of elements popped.
+6. If none of 3 to 5 happens, a syntax error occurs.
+
+### Grammer
 
     teff_file       ::= list EOF
     list            ::= node*
     node            ::= annotation* value (indent list unindent)?
-    value           ::= line_string
 
 Extensions
 ----------
@@ -155,11 +184,11 @@ Encoding of `map_key`:
 
 ### Nil
 
-The special `line_string` nil is used to represent an uninitialized nullable node.
+The special `value` nil is used to represent an uninitialized nullable node.
 
     nil    ::= "nil"
      ↓          ↓
-    value  ::= line_string
+    value  ::= char_visible+ char_inline*
 
 ### String
 A string is represented as either a `raw_string` or an `interpreted_string` (double
@@ -167,18 +196,18 @@ quoted).
 
     string             ::= raw_string | interpreted_string
      ↓                      ↓
-    value              ::= line_string
+    value              ::= char_visible+ char_inline*
 
-A `raw_string` is the same as a `line_string`, that cannot contains `newline`.
+A `raw_string` is the same as a `value`, that cannot contains `newline`.
 
-    raw_string         ::= line_string
+    raw_string         ::= value
 
 An `interpreted_string` can contain any Unicode code points by escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
     interpreted_string ::= '"' (unicode_value | byte_value)* '"'
      ↓                      ↓
-    value              ::= line_string
+    value              ::= char_visible+ char_inline*
 
 Escape sequences:
 
@@ -196,18 +225,18 @@ Escape sequences:
     \U    Unicode code point represented with exactly 8 hexadecimal digits followed by \U
 
 ### Regular expression
-A regular expression is a `line_string`. The syntax of regular expressions are
+A regular expression is a `value`. The syntax of regular expressions are
 defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 
 ### Boolean value
-Boolean value is a `line_string` of either true of false.
+Boolean value is a `value` of either true of false.
 
     boolean    ::= "true" | "false"
      ↓              ↓
-    value      ::= line_string
+    value      ::= char_visible+ char_inline*
 
 ### Numeric value
-Numeric value is a `line_string` that encode a number.
+Numeric value is a `value` that encode a number.
 
     sign       ::= "+" | "-"
     decimals   ::= [1-9] [0-9]*
@@ -215,10 +244,10 @@ Numeric value is a `line_string` that encode a number.
 #### Integer
     integer    ::= sign? decimals
      ↓              ↓
-    value      ::= line_string
+    value      ::= char_visible+ char_inline*
 
 #### Float
-Float value is a `line_string` that encode a floating point number:
+Float value is a `value` that encode a floating point number:
 
     exponent   ::= ( "e" | "E" ) ( "+" | "-" )? decimals
     float_base ::= (decimals "." decimal* exponent?) |
@@ -226,21 +255,21 @@ Float value is a `line_string` that encode a floating point number:
                    ("." decimals exponent?)
     float      ::= sign? float_base
      ↓              ↓
-    value      ::= line_string
+    value      ::= char_visible+ char_inline*
 
 #### Complex
     int_float  ::= decimals | float_base
     complex    ::= sign? int_float sign int_float "i"
      ↓              ↓
-    value      ::= line_string
+    value      ::= char_visible+ char_inline*
 
 ### Date/time (TODO: use a shorter representation)
-A date/time value is an `line_string` encoded with
+A date/time value is an `value` encoded with
 [RFC3339](http://www.rfc-editor.org/rfc/rfc3339.txt)
 
     date_time  ::= rfc3339_date_time
      ↓              ↓
-    value      ::= line_string
+    value      ::= char_visible+ char_inline*
 
 e.g.
 
@@ -251,22 +280,22 @@ An IP address is either an IPv4 or IPv6 address.
 
     ip         ::= ipv4 | ipv6
 
-An IPv4 address value is an `line_string` encoded with dot-decimal notation:
+An IPv4 address value is an `value` encoded with dot-decimal notation:
 
     ipv4       ::= decimals "." decimals "." decimals "." decimals
      ↓              ↓
-    value      ::= line_string
+    value      ::= char_visible+ char_inline*
 
 e.g.
 
     74.125.19.99
 
-An IPv6 address value is an `line_string` encoded with
+An IPv6 address value is an `value` encoded with
 [RFC5952](http://www.rfc-editor.org/rfc/rfc5952.txt).
 
     ipv6       ::= rfc5952_ipv6_address
      ↓              ↓
-    value      ::= line_string
+    value      ::= char_visible+ char_inline*
 
 e.g.
 

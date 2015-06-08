@@ -17,7 +17,7 @@ type TokenType int
 const (
 	Invalid TokenType = iota
 	Annotation
-	LineString
+	Value
 	Indent
 	Unindent
 	EOF
@@ -25,8 +25,8 @@ const (
 )
 
 type Token struct {
-	Type  TokenType
-	Value string
+	Type    TokenType
+	Content string
 }
 
 type Scanner struct {
@@ -83,9 +83,9 @@ func (s *Scanner) scanLine() {
 	var line string
 	line, s.err = s.readLine()
 	if line[0] == '#' {
-		s.pushTok(Token{Type: Annotation, Value: line[1:]})
+		s.pushTok(Token{Type: Annotation, Content: line[1:]})
 	} else {
-		s.pushTok(Token{Type: LineString, Value: line})
+		s.pushTok(Token{Type: Value, Content: line})
 	}
 }
 

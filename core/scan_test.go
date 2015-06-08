@@ -14,7 +14,7 @@ func (t TokenType) String() string {
 	switch t {
 	case Annotation:
 		return "a"
-	case LineString:
+	case Value:
 		return "s"
 	case Indent:
 		return "in"
@@ -27,10 +27,10 @@ func (t TokenType) String() string {
 }
 
 func (t Token) String() string {
-	if t.Value == "" {
+	if t.Content == "" {
 		return fmt.Sprintf("<%s>", t.Type.String())
 	}
-	return fmt.Sprintf("<%s:%s>", t.Value, t.Type.String())
+	return fmt.Sprintf("<%s:%s>", t.Content, t.Type.String())
 }
 
 func TestScan(t *testing.T) {

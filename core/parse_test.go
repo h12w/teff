@@ -1,18 +1,17 @@
 package core
 
-/*
 import (
 	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestCore(t *testing.T) {
-	for _, testcase := range []struct {
+func TestParse(t *testing.T) {
+	for i, testcase := range []struct {
 		v List
 		s string
 	}{
-		{List{}, ""},
+		{List(nil), ""},
 		{List{
 			{"a", nil, nil},
 		}, `
@@ -41,12 +40,23 @@ b
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(*list, testcase.v) {
-			t.Fatalf("expect %#v, but got %#v", testcase.v, *list)
+		if !reflect.DeepEqual(list, testcase.v) {
+			t.Fatalf("testcase %d: expect \n%#v\nbut got \n%#v", i, testcase.v, list)
 		}
 	}
 }
-*/
+
+func TestParseError(t *testing.T) {
+	for i, testcase := range []string{
+		"\ta",
+		"\x00",
+	} {
+		_, err := Parse(strings.NewReader(testcase))
+		if err == nil {
+			t.Fatalf("testcase %d, expect error but got nil", i)
+		}
+	}
+}
 
 type stringer interface {
 	String() string

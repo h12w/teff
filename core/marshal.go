@@ -29,22 +29,20 @@ func (list List) marshal(w *errWriter, prefix, indent string) {
 }
 
 func (n *Node) marshal(w *errWriter, prefix, indent string) {
-	if n.Value == "" && len(n.List) == 0 {
-		return
-	}
 	for _, a := range n.Annotations {
 		w.writeString(prefix)
 		w.writeByte('#')
 		w.writeString(a)
 		w.writeByte('\n')
 	}
-	w.writeString(prefix)
-	w.writeString(n.Value)
-	if len(n.List) == 0 {
-		return
+	if n.Value != "" {
+		w.writeString(prefix)
+		w.writeString(n.Value)
 	}
-	w.writeByte('\n')
-	n.List.marshal(w, prefix+indent, indent)
+	if len(n.List) > 0 {
+		w.writeByte('\n')
+		n.List.marshal(w, prefix+indent, indent)
+	}
 }
 
 type errWriter struct {

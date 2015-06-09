@@ -143,7 +143,7 @@ An array is represented as a list.
 To represent an array of array, the anonymous symbol `_` is introduced to
 represent the anonymous parent of a child array.
 
-    array_element ::=  "_"   indent array unindent
+    array_element ::= "_"    indent array unindent
      ↓                 ↓             ↓
     node          ::= value (indent list  unindent)?
 

@@ -7,69 +7,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	for i, testcase := range []struct {
-		v List
-		s string
-	}{
-		{List{}, ""},
-
-		{List{
-			{"a", nil, nil},
-		}, `
-a
-		`},
-
-		{List{
-			{"a", nil, nil},
-			{"b", nil, nil},
-		}, `
-a
-b
-		`},
-
-		{List{
-			{"a", List{
-				{"b", List{
-					{"c", nil, nil},
-				}, nil},
-				{"d", nil, nil},
-			}, nil},
-			{"e", nil, nil},
-		}, `
-a
-    b
-        c
-    d
-e
-		`},
-
-		{List{
-			{"a", nil, []string{"a1"}},
-		}, `
-#a1
-a
-		`},
-
-		{List{
-			{"a", nil, []string{"a1", "a2"}},
-		}, `
-#a1
-#a2
-a
-		`},
-
-		{List{
-			{"a", nil, []string{"a1", "a2"}},
-			{"b", nil, []string{"b1", "b2"}},
-		}, `
-#a1
-#a2
-a
-#b1
-#b2
-b
-		`},
-	} {
+	for i, testcase := range typeTestCases {
 		testcase.s = strings.Trim(testcase.s, "\n")
 		list, err := Parse(strings.NewReader(testcase.s))
 		if err != nil {
@@ -105,8 +43,4 @@ a
 			t.Fatalf("testcase %d, expect error but got nil", i)
 		}
 	}
-}
-
-type stringer interface {
-	String() string
 }

@@ -3,6 +3,7 @@ package teff
 import (
 	"bytes"
 	"fmt"
+	"h12.me/teff/core"
 	"reflect"
 	"strconv"
 )
@@ -36,14 +37,35 @@ func Unmarshal(data []byte, v interface{}) error {
 	if string(data) == "nil" {
 		return nil
 	}
+	list, err := core.Parse(bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
 	val := allocValue(v)
 	switch val.Type().Kind() {
 	case reflect.Int:
-		i, err := strconv.Atoi(string(data))
+		return unmarshalNode(list[0], val)
+	case reflect.Slice:
+		for i, node := range list {
+			val.Set(reflect.Append(val, reflect.New(val.Type().Elem()).Elem()))
+			elem := val.Index(i)
+			if err := unmarshalNode(node, elem); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return fmt.Errorf("unmarshal unsupported")
+}
+
+func unmarshalNode(node core.Node, v reflect.Value) error {
+	switch v.Type().Kind() {
+	case reflect.Int:
+		i, err := strconv.Atoi(node.Value)
 		if err != nil {
 			return err
 		}
-		val.SetInt(int64(i))
+		v.SetInt(int64(i))
 		return nil
 	}
 	return fmt.Errorf("unmarshal unsupported")

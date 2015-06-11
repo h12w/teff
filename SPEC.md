@@ -13,18 +13,17 @@ TEFF (TEst Friendly Format) is an extensible data format with testing purpose in
 mind. it is easy to read, compare and write manually.
 
 In general, the [core format](#core) of TEFF represents a tree. Each node of the
-tree is a string occupying a single line, and the relation between nodes are
-represented by indents.
+tree is an untyped string occupying a single line, and the relation between
+nodes are represented by indents.
 
 This model is simple and [extensible](#extensions). The minimal constraints make
-it possible to extend the resprentation of a data structure without intefering
-other nodes.
+it easy to be extended to represent various data types and structures.
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
 The major difference between TEFF and OGDL is that TEFF disallow mutiple values
 occupying a single line. This constraint simplifies the parser, opens more
-possibilities for extensions and makes it easier to compare two files line by line.
+possibilities for extensions and makes it clearer to compare two files line by line.
 
 Notation
 --------
@@ -106,6 +105,10 @@ Extensions
 In this section, format extensions for annotations and common types are specified.
 These definitions should cover all the builtin types and some of the important
 types in standard libraries.
+
+It is assumed that an external schema must be provided when interpreting the
+structures defined in the extensions, therefore, the representations of two
+extensions may have the same format without causing any conflictions.
 
     unicode_letter  ::= <a Unicode code point classified as "Letter">
     unicode_digit   ::= <a Unicode code point classified as "Decimal Digit">
@@ -201,7 +204,7 @@ quoted).
      ↓                      ↓
     value              ::= char_visible+ char_inline*
 
-A `raw_string` is the same as a `value`, that cannot contains `newline`.
+A `raw_string` is the same as a `value` as long as it does not start with `#`.
 
     raw_string         ::= value
 

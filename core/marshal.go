@@ -7,16 +7,16 @@ import (
 )
 
 func (list List) String() string {
-	s, _ := list.Marshal("", "\t")
-	return string(s)
+	var w bytes.Buffer
+	list.Marshal(&w, "", "\t")
+	return w.String()
 }
 
-func (list List) Marshal(prefix, indent string) ([]byte, error) {
-	var w bytes.Buffer
-	ew := newErrWriter(&w)
+func (list List) Marshal(w io.Writer, prefix, indent string) error {
+	ew := newErrWriter(w)
 	list.marshal(&ew, "", "\t")
 	ew.flush()
-	return w.Bytes(), ew.err
+	return ew.err
 }
 
 func (list List) marshal(w *errWriter, prefix, indent string) {

@@ -7,20 +7,22 @@ import (
 )
 
 func TestMarshal(t *testing.T) {
-	for _, testcase := range []struct {
+	for i, testcase := range []struct {
 		value interface{}
 		text  string
 	}{
 		{nil, "nil"},
+
 		{1, "1"},
 		{-1, "-1"},
 
-		{"a", `"a"`},
-		{ns("a"), `"a"`},
+		{"a", `a`},
+		{ns("a"), `a`},
 
+		{[]int{}, ""},
 		{[]int{1, 2, 3}, "1\n2\n3"},
-		{[]string{"a", "b", "c"}, "\"a\"\n\"b\"\n\"c\""},
-		{[]*string{ns("a"), ns("b"), ns("c")}, "\"a\"\n\"b\"\n\"c\""},
+		{[]string{"a", "b", "c"}, "a\nb\nc"},
+		{[]*string{ns("a"), ns("b"), ns("c")}, "a\nb\nc"},
 	} {
 		{
 			buf, err := Marshal(testcase.value)
@@ -44,7 +46,7 @@ func TestMarshal(t *testing.T) {
 			}
 			result := string(buf)
 			if result != testcase.text {
-				t.Fatalf("expect \n%s\n    but got \n%s", testcase.text, result)
+				t.Fatalf("testcase %d: expect \n%s\n    but got \n%s", i, testcase.text, result)
 			}
 		}
 	}

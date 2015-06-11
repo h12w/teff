@@ -61,7 +61,11 @@ func marshalNode(v reflect.Value) (core.Node, error) {
 	case reflect.Int:
 		return core.Node{Value: fmt.Sprint(v.Interface())}, nil
 	case reflect.String:
-		return core.Node{Value: strconv.Quote(v.Interface().(string))}, nil
+		s := v.Interface().(string)
+		if !strconv.CanBackquote(s) {
+			s = strconv.Quote(s)
+		}
+		return core.Node{Value: s}, nil
 	case reflect.Ptr:
 		return marshalNode(v.Elem())
 	}
@@ -98,7 +102,10 @@ func unmarshalNode(node core.Node, v reflect.Value) error {
 		v.SetInt(int64(i))
 		return nil
 	case reflect.String:
-		s, _ := strconv.Unquote(node.Value)
+		s, err := strconv.Unquote(node.Value)
+		if err != nil {
+			s = node.Value
+		}
 		v.SetString(s)
 		return nil
 	case reflect.Ptr:

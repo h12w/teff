@@ -12,25 +12,11 @@ func Marshal(v interface{}) ([]byte, error) {
 	if v == nil {
 		return []byte("nil"), nil
 	}
-	return marshal(reflectValue(v))
-}
-
-func marshal(v reflect.Value) ([]byte, error) {
-	switch v.Type().Kind() {
-	case reflect.Int:
-		return []byte(fmt.Sprint(v.Interface())), nil
-	case reflect.Slice:
-		ss := [][]byte{}
-		for i := 0; i < v.Len(); i++ {
-			f, err := marshal(v.Index(i))
-			if err != nil {
-				return nil, err
-			}
-			ss = append(ss, f)
-		}
-		return bytes.Join(ss, []byte{'\n'}), nil
+	list, err := marshalList(reflectValue(reflect.ValueOf(v)))
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("marshal unsupported")
+	return list.Marshal("", "\t")
 }
 
 func Unmarshal(data []byte, v interface{}) error {
@@ -41,19 +27,59 @@ func Unmarshal(data []byte, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	val := allocValue(v)
-	switch val.Type().Kind() {
+	return unmarshalList(list, reflect.ValueOf(v))
+}
+
+func marshalList(v reflect.Value) (core.List, error) {
+	switch v.Type().Kind() {
+	case reflect.Int, reflect.String:
+		node, err := marshalNode(v)
+		if err != nil {
+			return nil, err
+		}
+		return core.List{node}, nil
+	case reflect.Slice:
+		list := make(core.List, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			node, err := marshalNode(v.Index(i))
+			if err != nil {
+				return nil, err
+			}
+			list[i] = node
+		}
+		return list, nil
+	}
+	return nil, fmt.Errorf("marshal unsupported")
+}
+
+func marshalNode(v reflect.Value) (core.Node, error) {
+	switch v.Type().Kind() {
 	case reflect.Int:
-		return unmarshalNode(list[0], val)
+		return core.Node{Value: fmt.Sprint(v.Interface())}, nil
+	case reflect.String:
+		return core.Node{Value: strconv.Quote(v.Interface().(string))}, nil
+	case reflect.Ptr:
+		return marshalNode(v.Elem())
+	}
+	return core.Node{}, fmt.Errorf("marshal unsupported")
+
+}
+
+func unmarshalList(list core.List, v reflect.Value) error {
+	switch v.Type().Kind() {
+	case reflect.Int, reflect.String:
+		return unmarshalNode(list[0], v)
 	case reflect.Slice:
 		for i, node := range list {
-			val.Set(reflect.Append(val, reflect.New(val.Type().Elem()).Elem()))
-			elem := val.Index(i)
+			v.Set(reflect.Append(v, reflect.New(v.Type().Elem()).Elem()))
+			elem := v.Index(i)
 			if err := unmarshalNode(node, elem); err != nil {
 				return err
 			}
 		}
 		return nil
+	case reflect.Ptr:
+		return unmarshalList(list, allocValue(v))
 	}
 	return fmt.Errorf("unmarshal unsupported")
 }
@@ -67,20 +93,24 @@ func unmarshalNode(node core.Node, v reflect.Value) error {
 		}
 		v.SetInt(int64(i))
 		return nil
+	case reflect.String:
+		s, _ := strconv.Unquote(node.Value)
+		v.SetString(s)
+		return nil
+	case reflect.Ptr:
+		return unmarshalNode(node, allocValue(v))
 	}
 	return fmt.Errorf("unmarshal unsupported")
 }
 
-func reflectValue(value interface{}) reflect.Value {
-	v := reflect.ValueOf(value)
+func reflectValue(v reflect.Value) reflect.Value {
 	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
 		v = reflect.Indirect(v)
 	}
 	return v
 }
 
-func allocValue(value interface{}) reflect.Value {
-	v := reflect.ValueOf(value)
+func allocValue(v reflect.Value) reflect.Value {
 	for v.Type().Kind() == reflect.Ptr {
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))

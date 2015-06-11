@@ -8,15 +8,15 @@ import (
 
 func (list List) String() string {
 	s, _ := list.Marshal("", "\t")
-	return s
+	return string(s)
 }
 
-func (list List) Marshal(prefix, indent string) (string, error) {
+func (list List) Marshal(prefix, indent string) ([]byte, error) {
 	var w bytes.Buffer
 	ew := newErrWriter(&w)
 	list.marshal(&ew, "", "\t")
 	ew.flush()
-	return w.String(), ew.err
+	return w.Bytes(), ew.err
 }
 
 func (list List) marshal(w *errWriter, prefix, indent string) {

@@ -14,7 +14,13 @@ func TestMarshal(t *testing.T) {
 		{nil, "nil"},
 		{1, "1"},
 		{-1, "-1"},
+
+		{"a", `"a"`},
+		{ns("a"), `"a"`},
+
 		{[]int{1, 2, 3}, "1\n2\n3"},
+		{[]string{"a", "b", "c"}, "\"a\"\n\"b\"\n\"c\""},
+		{[]*string{ns("a"), ns("b"), ns("c")}, "\"a\"\n\"b\"\n\"c\""},
 	} {
 		{
 			buf, err := Marshal(testcase.value)
@@ -73,3 +79,7 @@ func newValueOf(v interface{}) interface{} {
 }
 
 var p = fmt.Println
+
+func ns(s string) *string {
+	return &s
+}

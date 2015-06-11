@@ -9,6 +9,10 @@ import (
 )
 
 func Marshal(v interface{}) ([]byte, error) {
+	return MarshalIndent(v, "", "\t")
+}
+
+func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
 	if v == nil {
 		return []byte("nil"), nil
 	}
@@ -16,7 +20,7 @@ func Marshal(v interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return list.Marshal("", "\t")
+	return list.Marshal(prefix, indent)
 }
 
 func Unmarshal(data []byte, v interface{}) error {

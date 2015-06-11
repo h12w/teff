@@ -157,3 +157,34 @@ func allocValue(v reflect.Value) reflect.Value {
 	}
 	return v
 }
+
+type nodeRegistry struct {
+	node  *core.Node
+	label int
+}
+
+type refRegister struct {
+	m      map[uintptr]nodeRegistry
+	serial int
+}
+
+func newRefRegister() *refRegister {
+	return &refRegister{
+		m:      make(map[uintptr]nodeRegistry),
+		serial: 1,
+	}
+}
+
+func (r *refRegister) register(p uintptr, node *core.Node) int {
+	if reg, ok := r.m[p]; ok {
+		if reg.label == 0 {
+			reg.label = r.serial
+			reg.node.Annotations = append(reg.node.Annotations, "# ^"+strconv.Itoa(reg.label))
+			r.serial++
+			r.m[p] = reg
+		}
+		return reg.label
+	}
+	r.m[p] = nodeRegistry{node, 0}
+	return 0
+}

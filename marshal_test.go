@@ -23,10 +23,10 @@ func TestMarshal(t *testing.T) {
 		{[]int{1, 2, 3}, "1\n2\n3"},
 		{[]string{"a", "b", "c"}, "a\nb\nc"},
 		{[]*string{ns("a"), ns("b"), ns("c")}, "a\nb\nc"},
-		//{func() []*string {
-		//	a := ns("a")
-		//	return []*string{a, a}
-		//}(), "# ^1\na\n^1"},
+		{func() []*string {
+			a := ns("a")
+			return []*string{a, a}
+		}(), "# ^1\na\n^1"},
 	} {
 		{
 			buf, err := Marshal(testcase.value)

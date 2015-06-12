@@ -14,7 +14,9 @@ func TestModel(t *testing.T) {
 		{nil, nil},
 
 		{1, List{{Value: 1}}},
+		{pi(1), List{{Value: 1}}},
 		{"a", List{{Value: "a"}}},
+		{ps("a"), List{{Value: "a"}}},
 
 		{[]int{}, List{}},
 		{[]string{"a"}, List{{Value: "a"}}},
@@ -26,6 +28,8 @@ func TestModel(t *testing.T) {
 				{List: List{{Value: 3}}},
 			},
 		},
+
+		{[]*int{pi(1), pi(2)}, List{{Value: 1}, {Value: 2}}},
 	} {
 		{
 			list, err := New(testcase.v)
@@ -61,3 +65,11 @@ func newValueOf(v interface{}) interface{} {
 }
 
 var p = fmt.Println
+
+func pi(i int) *int {
+	return &i
+}
+
+func ps(s string) *string {
+	return &s
+}

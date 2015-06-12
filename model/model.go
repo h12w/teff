@@ -67,6 +67,8 @@ func newNode(v reflect.Value) (Node, error) {
 			return Node{}, err
 		}
 		return Node{List: list}, nil
+	case reflect.Ptr:
+		return newNode(indirect(v))
 	}
 	return Node{}, errors.New("newNode: unsupported type")
 }
@@ -99,6 +101,8 @@ func (n Node) fill(v reflect.Value) error {
 		return nil
 	case reflect.Slice:
 		return n.List.fill(v)
+	case reflect.Ptr:
+		return n.fill(allocIndirect(v))
 	}
 	return errors.New("Node.fill: unsupported type")
 }

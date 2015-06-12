@@ -47,7 +47,7 @@ func TestModel(t *testing.T) {
 
 		{
 			v := newValueOf(testcase.v)
-			if err := testcase.l.Fill(v); err != nil {
+			if err := Fill(testcase.l, v); err != nil {
 				t.Fatalf("testcase %d: Fill: %v", i, err)
 			}
 			list, err := New(v)

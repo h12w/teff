@@ -28,40 +28,11 @@ func New(v interface{}) (List, error) {
 	return newMaker().newList(reflect.ValueOf(v))
 }
 
-func (l List) Fill(v interface{}) error {
+func Fill(l List, v interface{}) error {
 	if v == nil {
 		return nil
 	}
-	return l.fill(reflect.ValueOf(v))
-}
-
-// maker makes a new List
-type maker struct {
-	m      map[uintptr]*Node
-	serial int
-}
-
-func newMaker() *maker {
-	return &maker{
-		m:      make(map[uintptr]*Node),
-		serial: 1,
-	}
-}
-
-func (m *maker) label(addr uintptr) (Label, bool) {
-	if node, ok := m.m[addr]; ok {
-		if node.Label == "" {
-			node.Label = Label(strconv.Itoa(m.serial))
-			p(node.Label)
-			m.serial++
-		}
-		return node.Label, true
-	}
-	return Label(0), false
-}
-
-func (m *maker) register(p uintptr, node *Node) {
-	m.m[p] = node
+	return newFiller().fillList(l, reflect.ValueOf(v))
 }
 
 func (m *maker) newList(v reflect.Value) (List, error) {
@@ -103,6 +74,7 @@ func (m *maker) newNode(v reflect.Value) (*Node, error) {
 		if label, ok := m.label(addr); ok {
 			return &Node{Value: label}, nil
 		}
+		// wrong structure will cause infinite loop here.
 		node, err := m.newNode(indirect(v))
 		if err != nil {
 			return nil, err
@@ -113,28 +85,28 @@ func (m *maker) newNode(v reflect.Value) (*Node, error) {
 	return nil, errors.New("newNode: unsupported type")
 }
 
-func (l List) fill(v reflect.Value) error {
+func (f *filler) fillList(l List, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
 		if len(l) > 0 {
-			return l[0].fill(v)
+			return f.fillNode(l[0], v)
 		}
 	case reflect.Slice:
 		for i, n := range l {
 			v.Set(reflect.Append(v, reflect.New(v.Type().Elem()).Elem()))
 			elem := v.Index(i)
-			if err := n.fill(elem); err != nil {
+			if err := f.fillNode(n, elem); err != nil {
 				return err
 			}
 		}
 		return nil
 	case reflect.Ptr:
-		return l.fill(allocIndirect(v))
+		return f.fillList(l, allocIndirect(v))
 	}
 	return errors.New("List.fill: unsupported type")
 }
 
-func (n Node) fill(v reflect.Value) error {
+func (f *filler) fillNode(n *Node, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
 		if _, ok := n.Value.(Label); ok {
@@ -143,9 +115,9 @@ func (n Node) fill(v reflect.Value) error {
 		v.Set(reflect.ValueOf(n.Value))
 		return nil
 	case reflect.Slice:
-		return n.List.fill(v)
+		return f.fillList(n.List, v)
 	case reflect.Ptr:
-		return n.fill(allocIndirect(v))
+		return f.fillNode(n, allocIndirect(v))
 	}
 	return errors.New("Node.fill: unsupported type")
 }
@@ -165,4 +137,50 @@ func allocIndirect(v reflect.Value) reflect.Value {
 		v = reflect.Indirect(v)
 	}
 	return v
+}
+
+// maker makes a new List
+type maker struct {
+	m      map[uintptr]*Node
+	serial int
+}
+
+func newMaker() *maker {
+	return &maker{
+		m:      make(map[uintptr]*Node),
+		serial: 1,
+	}
+}
+
+func (m *maker) label(addr uintptr) (Label, bool) {
+	if node, ok := m.m[addr]; ok {
+		if node.Label == "" {
+			node.Label = Label(strconv.Itoa(m.serial))
+			p(node.Label)
+			m.serial++
+		}
+		return node.Label, true
+	}
+	return Label(0), false
+}
+
+func (m *maker) register(p uintptr, node *Node) {
+	m.m[p] = node
+}
+
+// filler fills from a list
+type filler struct {
+	m map[Label]reflect.Value
+}
+
+func newFiller() *filler {
+	return &filler{make(map[Label]reflect.Value)}
+}
+
+func (f *filler) register(label Label, v reflect.Value) {
+	f.m[label] = v
+}
+
+func (f *filler) value(label Label) reflect.Value {
+	return f.m[label]
 }

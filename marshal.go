@@ -78,7 +78,7 @@ func marshalList(v reflect.Value) (core.List, error) {
 		}
 		return list, nil
 	case reflect.Ptr:
-		return marshalList(reflectValue(v))
+		return marshalList(indirect(v))
 	}
 	return nil, fmt.Errorf("marshal unsupported")
 }
@@ -97,7 +97,7 @@ func unmarshalList(list core.List, v reflect.Value) error {
 		}
 		return nil
 	case reflect.Ptr:
-		return unmarshalList(list, allocValue(v))
+		return unmarshalList(list, allocIndirect(v))
 	}
 	return fmt.Errorf("unmarshal unsupported")
 }
@@ -136,19 +136,19 @@ func unmarshalNode(node core.Node, v reflect.Value) error {
 		v.SetString(s)
 		return nil
 	case reflect.Ptr:
-		return unmarshalNode(node, allocValue(v))
+		return unmarshalNode(node, allocIndirect(v))
 	}
 	return fmt.Errorf("unmarshal unsupported")
 }
 
-func reflectValue(v reflect.Value) reflect.Value {
+func indirect(v reflect.Value) reflect.Value {
 	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
 		v = reflect.Indirect(v)
 	}
 	return v
 }
 
-func allocValue(v reflect.Value) reflect.Value {
+func allocIndirect(v reflect.Value) reflect.Value {
 	for v.Type().Kind() == reflect.Ptr {
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))

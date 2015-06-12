@@ -118,9 +118,11 @@ extensions may have the same format without causing any conflictions.
 TEFF can represent a cyclic graph by reference annotation.
 
     ref_id          ::= "^" letter_digit+
+
     ref_annotation  ::= "#" spaces? ref_id
-     ↓                   ↓   ↓
-    annotation      ::= "#" char_inline*
+    --------------      --- --------------
+        ↓                ↓        ↓
+    annotation      ::= "#"  char_inline*
 
 `ref_id` is a unique ID within a TEFF file. It should be defined only once but
 can be referenced multiple times by the `ref_id`.
@@ -128,9 +130,11 @@ can be referenced multiple times by the `ref_id`.
 TEFF can optionally represent type by type annotation.
 
     type_label      ::= "<" letter_digit+ ">"
+
     type_annotation ::= "#" spaces? type_label
-     ↓                   ↓   ↓
-    annotation      ::= "#" char_inline*
+    ---------------     --- ------------------
+        ↓                ↓         ↓
+    annotation      ::= "#"   char_inline*
 
 When both a cyclic reference and a type are defined for a node, it does not
 matter which comes first. Both annotates the next node.
@@ -140,14 +144,16 @@ matter which comes first. Both annotates the next node.
 An array is represented as a list.
 
     array         ::= array_element*
-     ↓                 ↓
-    list          ::= node*
+    -----             --------------
+     ↓                     ↓
+    list          ::=     node*
 
 To represent an array of array, the anonymous symbol `_` is introduced to
 represent the anonymous parent of a child array.
 
     array_element ::= "_"    indent array unindent
-     ↓                 ↓             ↓
+    -------------     ---    ------ ----- --------
+     ↓                 ↓       ↓     ↓       ↓
     node          ::= value (indent list  unindent)?
 
 e.g.
@@ -165,20 +171,23 @@ A map is represented with a list of key-value pairs. Each pair is represented as
 a node.
 
     map           ::= key_value*
-     ↓                 ↓
-    list          ::= node*
+    ---               ----------
+     ↓                   ↓
+    list          ::=   node*
 
 When the value of an key-value pair is encoded as a single `value`:
 
     key_value     ::= map_key ":" spaces? map_value
-     ↓                 ↓              
-    node          ::= value
+    ---------         -----------------------------
+     ↓                             ↓
+    node          ::=            value
 
 When the value of an key-value pair is encoded as a `list`:
 
     key_value     ::= map_key ":" indent map_value unindent
-     ↓                 ↓              ↓
-    node          ::= value  (indent list      unindent)?
+    ---------         ----------- ------ --------- --------
+     ↓                    ↓         ↓       ↓         ↓
+    node          ::=   value    (indent   list    unindent)?
 
 Encoding of `map_key`:
 
@@ -193,6 +202,7 @@ Encoding of `map_key`:
 The special `value` nil is used to represent an uninitialized nullable node.
 
     nil    ::= "nil"
+    ---        -----
      ↓          ↓
     value  ::= char_visible+ char_inline*
 
@@ -201,8 +211,9 @@ A string is represented as either a `raw_string` or an `interpreted_string` (dou
 quoted).
 
     string             ::= raw_string | interpreted_string
-     ↓                      ↓
-    value              ::= char_visible+ char_inline*
+    ------                 -------------------------------
+     ↓                                  ↓
+    value              ::=   char_visible+ char_inline*
 
 A `raw_string` is the same as a `value` as long as it does not start with `#`.
 
@@ -211,9 +222,11 @@ A `raw_string` is the same as a `value` as long as it does not start with `#`.
 An `interpreted_string` can contain any Unicode code points by escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
+
     interpreted_string ::= '"' (unicode_value | byte_value)* '"'
-     ↓                      ↓
-    value              ::= char_visible+ char_inline*
+    ------------------     -------------------------------------
+     ↓                                       ↓
+    value              ::=       char_visible+ char_inline*
 
 Escape sequences:
 
@@ -238,7 +251,8 @@ defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 Boolean value is a `value` of either true of false.
 
     boolean    ::= "true" | "false"
-     ↓              ↓
+    -------        ----------------
+     ↓                   ↓
     value      ::= char_visible+ char_inline*
 
 ### Numeric value
@@ -249,7 +263,8 @@ Numeric value is a `value` that encode a number.
 
 #### Integer
     integer    ::= sign? decimals
-     ↓              ↓
+    -------        --------------
+     ↓                   ↓
     value      ::= char_visible+ char_inline*
 
 #### Float
@@ -259,22 +274,27 @@ Float value is a `value` that encode a floating point number:
     float_base ::= (decimals "." decimal* exponent?) |
                    (decimals exponent) |
                    ("." decimals exponent?)
+
     float      ::= sign? float_base
-     ↓              ↓
+    -----          ----------------
+     ↓                    ↓
     value      ::= char_visible+ char_inline*
 
 #### Complex
     int_float  ::= decimals | float_base
+
     complex    ::= sign? int_float sign int_float "i"
-     ↓              ↓
-    value      ::= char_visible+ char_inline*
+    -------        ----------------------------------
+     ↓                            ↓
+    value      ::=    char_visible+ char_inline*
 
 ### Date/time (TODO: use a shorter representation)
 A date/time value is an `value` encoded with
 [RFC3339](http://www.rfc-editor.org/rfc/rfc3339.txt)
 
     date_time  ::= rfc3339_date_time
-     ↓              ↓
+    ---------      -----------------
+     ↓                    ↓
     value      ::= char_visible+ char_inline*
 
 e.g.
@@ -289,8 +309,9 @@ An IP address is either an IPv4 or IPv6 address.
 An IPv4 address value is an `value` encoded with dot-decimal notation:
 
     ipv4       ::= decimals "." decimals "." decimals "." decimals
-     ↓              ↓
-    value      ::= char_visible+ char_inline*
+    ----           -----------------------------------------------
+     ↓                                   ↓
+    value      ::=           char_visible+ char_inline*
 
 e.g.
 
@@ -300,7 +321,8 @@ An IPv6 address value is an `value` encoded with
 [RFC5952](http://www.rfc-editor.org/rfc/rfc5952.txt).
 
     ipv6       ::= rfc5952_ipv6_address
-     ↓              ↓
+    ----           --------------------
+     ↓                      ↓
     value      ::= char_visible+ char_inline*
 
 e.g.

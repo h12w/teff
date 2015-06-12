@@ -9,21 +9,23 @@ package model
 import (
 	"errors"
 	"reflect"
+	"strconv"
 )
 
-type List []Node
+type List []*Node
 
 type Node struct {
-	Label string
+	Label Label
 	Value interface{}
 	List  List
 }
+type Label string
 
 func New(v interface{}) (List, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return newList(reflect.ValueOf(v))
+	return newMaker().newList(reflect.ValueOf(v))
 }
 
 func (l List) Fill(v interface{}) error {
@@ -33,10 +35,39 @@ func (l List) Fill(v interface{}) error {
 	return l.fill(reflect.ValueOf(v))
 }
 
-func newList(v reflect.Value) (List, error) {
+// maker makes a new List
+type maker struct {
+	m      map[uintptr]*Node
+	serial int
+}
+
+func newMaker() *maker {
+	return &maker{
+		m:      make(map[uintptr]*Node),
+		serial: 1,
+	}
+}
+
+func (m *maker) label(addr uintptr) (Label, bool) {
+	if node, ok := m.m[addr]; ok {
+		if node.Label == "" {
+			node.Label = Label(strconv.Itoa(m.serial))
+			p(node.Label)
+			m.serial++
+		}
+		return node.Label, true
+	}
+	return Label(0), false
+}
+
+func (m *maker) register(p uintptr, node *Node) {
+	m.m[p] = node
+}
+
+func (m *maker) newList(v reflect.Value) (List, error) {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		node, err := newNode(v)
+		node, err := m.newNode(v)
 		if err != nil {
 			return nil, err
 		}
@@ -44,7 +75,7 @@ func newList(v reflect.Value) (List, error) {
 	case reflect.Slice:
 		l := make(List, v.Len())
 		for i := 0; i < v.Len(); i++ {
-			node, err := newNode(v.Index(i))
+			node, err := m.newNode(v.Index(i))
 			if err != nil {
 				return nil, err
 			}
@@ -52,25 +83,34 @@ func newList(v reflect.Value) (List, error) {
 		}
 		return l, nil
 	case reflect.Ptr:
-		return newList(indirect(v))
+		return m.newList(indirect(v))
 	}
 	return nil, errors.New("newList: unsupported type")
 }
 
-func newNode(v reflect.Value) (Node, error) {
+func (m *maker) newNode(v reflect.Value) (*Node, error) {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		return Node{Value: v.Interface()}, nil
+		return &Node{Value: v.Interface()}, nil
 	case reflect.Slice:
-		list, err := newList(v)
+		list, err := m.newList(v)
 		if err != nil {
-			return Node{}, err
+			return nil, err
 		}
-		return Node{List: list}, nil
+		return &Node{List: list}, nil
 	case reflect.Ptr:
-		return newNode(indirect(v))
+		addr := v.Pointer()
+		if label, ok := m.label(addr); ok {
+			return &Node{Value: label}, nil
+		}
+		node, err := m.newNode(indirect(v))
+		if err != nil {
+			return nil, err
+		}
+		m.register(addr, node)
+		return node, nil
 	}
-	return Node{}, errors.New("newNode: unsupported type")
+	return nil, errors.New("newNode: unsupported type")
 }
 
 func (l List) fill(v reflect.Value) error {
@@ -97,6 +137,9 @@ func (l List) fill(v reflect.Value) error {
 func (n Node) fill(v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
+		if _, ok := n.Value.(Label); ok {
+			return nil
+		}
 		v.Set(reflect.ValueOf(n.Value))
 		return nil
 	case reflect.Slice:

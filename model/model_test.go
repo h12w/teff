@@ -30,6 +30,10 @@ func TestModel(t *testing.T) {
 		},
 
 		{[]*int{pi(1), pi(2)}, List{{Value: 1}, {Value: 2}}},
+		{func() []*int {
+			i := pi(3)
+			return []*int{i, i}
+		}(), List{{Label: Label("1"), Value: 3}, {Value: Label("1")}}},
 	} {
 		{
 			list, err := New(testcase.v)
@@ -37,7 +41,7 @@ func TestModel(t *testing.T) {
 				t.Fatalf("testcase %d: New: %v", i, err)
 			}
 			if !reflect.DeepEqual(list, testcase.l) {
-				t.Fatalf("testcase %d: New: mismatch, expect \n%#v\ngot\n%#v", i, testcase.l, list)
+				t.Fatalf("testcase %d: New: mismatch, expect \n%v\ngot\n%v", i, testcase.l, list)
 			}
 		}
 
@@ -51,7 +55,7 @@ func TestModel(t *testing.T) {
 				t.Fatalf("testcase %d: New: %v", i, err)
 			}
 			if !reflect.DeepEqual(list, testcase.l) {
-				t.Fatalf("testcase %d: Fill: mismatch, expect \n%#v\ngot\n%#v", i, testcase.l, list)
+				t.Fatalf("testcase %d: Fill: mismatch, expect \n%v\ngot\n%v", i, testcase.l, list)
 			}
 		}
 	}
@@ -72,4 +76,8 @@ func pi(i int) *int {
 
 func ps(s string) *string {
 	return &s
+}
+
+func (n *Node) String() string {
+	return fmt.Sprintf("%#v", *n)
 }

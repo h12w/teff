@@ -110,11 +110,12 @@ It is assumed that an external schema must be provided when interpreting the
 structures defined in the extensions, therefore, the representations of two
 extensions may have the same format without causing any conflictions.
 
+### Reference & type annotation
+
     unicode_letter  ::= <a Unicode code point classified as "Letter">
     unicode_digit   ::= <a Unicode code point classified as "Decimal Digit">
     letter_digit    ::= unicode_letter | unicode_digit | "_"
 
-### Reference & type annotation
 TEFF can represent a cyclic graph by reference annotation.
 
     ref_id          ::= "^" letter_digit+

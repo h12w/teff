@@ -138,23 +138,6 @@ func (f *filler) fillPtrFromNode(n *Node, v reflect.Value) error {
 	return f.fillNode(n, allocIndirect(v))
 }
 
-func indirect(v reflect.Value) reflect.Value {
-	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
-		v = reflect.Indirect(v)
-	}
-	return v
-}
-
-func allocIndirect(v reflect.Value) reflect.Value {
-	for v.Type().Kind() == reflect.Ptr {
-		if v.IsNil() {
-			v.Set(reflect.New(v.Type().Elem()))
-		}
-		v = reflect.Indirect(v)
-	}
-	return v
-}
-
 // maker makes a new List
 type maker struct {
 	m      map[uintptr]*Node
@@ -198,4 +181,21 @@ func (m *maker) label(addr uintptr) (Label, bool) {
 
 func (f *filler) value(label Label) reflect.Value {
 	return f.m[label]
+}
+
+func indirect(v reflect.Value) reflect.Value {
+	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
+		v = reflect.Indirect(v)
+	}
+	return v
+}
+
+func allocIndirect(v reflect.Value) reflect.Value {
+	for v.Type().Kind() == reflect.Ptr {
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		v = reflect.Indirect(v)
+	}
+	return v
 }

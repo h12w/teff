@@ -70,11 +70,13 @@ func (m *maker) newNode(v reflect.Value) (*Node, error) {
 		}
 		return &Node{List: list}, nil
 	case reflect.Ptr:
+		if v.IsNil() {
+			return nil, nil // avoid infinite loop
+		}
 		addr := v.Pointer()
 		if label, ok := m.label(addr); ok {
 			return &Node{Value: label}, nil
 		}
-		// wrong structure will cause infinite loop here.
 		node, err := m.newNode(indirect(v))
 		if err != nil {
 			return nil, err
@@ -117,6 +119,7 @@ func (f *filler) fillNode(n *Node, v reflect.Value) error {
 	case reflect.Slice:
 		return f.fillList(n.List, v)
 	case reflect.Ptr:
+		return nil
 		return f.fillNode(n, allocIndirect(v))
 	}
 	return errors.New("Node.fill: unsupported type")

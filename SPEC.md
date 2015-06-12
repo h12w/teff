@@ -176,7 +176,7 @@ a node.
 
     map           ::= key_value*
     ---               ----------
-     ↓                   ↓
+     ↓                  ↓
     ----              -----
     list          ::= node*
 
@@ -184,7 +184,7 @@ When the value of an key-value pair is encoded as a single `value`:
 
     key_value     ::= map_key ":" spaces? map_value
     ---------         -----------------------------
-     ↓                 ↓
+     ↓                  ↓
     ----              -----
     node          ::= value
 
@@ -220,7 +220,7 @@ quoted).
 
     string             ::= raw_string | interpreted_string
     ------                 -------------------------------
-     ↓                                  ↓
+      ↓                                 ↓
     -----                  --------------------------
     value              ::= char_visible+ char_inline*
 

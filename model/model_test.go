@@ -19,8 +19,14 @@ func TestModel(t *testing.T) {
 		{ps("a"), List{{Value: "a"}}},
 
 		{[]int{}, List{}},
-		{[]string{"a"}, List{{Value: "a"}}},
-		{[]int{1, 2}, List{{Value: 1}, {Value: 2}}},
+		{
+			[]string{"a"},
+			List{{Value: "a"}},
+		},
+		{
+			[]int{1, 2},
+			List{{Value: 1}, {Value: 2}},
+		},
 		{
 			[][]int{{1, 2}, {3}},
 			List{
@@ -29,11 +35,17 @@ func TestModel(t *testing.T) {
 			},
 		},
 
-		{[]*int{pi(1), pi(2)}, List{{Value: 1}, {Value: 2}}},
-		{func() []*int {
-			i := pi(3)
-			return []*int{i, i}
-		}(), List{{Label: Label("1"), Value: 3}, {Value: Label("1")}}},
+		{
+			[]*int{pi(1), pi(2)},
+			List{{Value: 1}, {Value: 2}},
+		},
+		{
+			func() []*int {
+				i := pi(3)
+				return []*int{i, i}
+			}(),
+			List{{Label: Label("1"), Value: 3}, {Value: Label("1")}},
+		},
 	} {
 		{
 			list, err := New(testcase.v)

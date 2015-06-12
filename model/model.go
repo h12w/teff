@@ -59,34 +59,6 @@ func (m *maker) newList(v reflect.Value) (List, error) {
 	return nil, errors.New("newList: unsupported type")
 }
 
-func (m *maker) newNode(v reflect.Value) (*Node, error) {
-	switch v.Type().Kind() {
-	case reflect.Int, reflect.String:
-		return &Node{Value: v.Interface()}, nil
-	case reflect.Slice:
-		list, err := m.newList(v)
-		if err != nil {
-			return nil, err
-		}
-		return &Node{List: list}, nil
-	case reflect.Ptr:
-		if v.IsNil() {
-			return nil, nil // avoid infinite loop
-		}
-		addr := v.Pointer()
-		if label, ok := m.label(addr); ok {
-			return &Node{Value: label}, nil
-		}
-		node, err := m.newNode(indirect(v))
-		if err != nil {
-			return nil, err
-		}
-		m.register(addr, node)
-		return node, nil
-	}
-	return nil, errors.New("newNode: unsupported type")
-}
-
 func (f *filler) fillList(l List, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
@@ -108,6 +80,22 @@ func (f *filler) fillList(l List, v reflect.Value) error {
 	return errors.New("List.fill: unsupported type")
 }
 
+func (m *maker) newNode(v reflect.Value) (*Node, error) {
+	switch v.Type().Kind() {
+	case reflect.Int, reflect.String:
+		return &Node{Value: v.Interface()}, nil
+	case reflect.Slice:
+		list, err := m.newList(v)
+		if err != nil {
+			return nil, err
+		}
+		return &Node{List: list}, nil
+	case reflect.Ptr:
+		return m.nodeFromPtr(v)
+	}
+	return nil, errors.New("newNode: unsupported type")
+}
+
 func (f *filler) fillNode(n *Node, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
@@ -119,15 +107,35 @@ func (f *filler) fillNode(n *Node, v reflect.Value) error {
 	case reflect.Slice:
 		return f.fillList(n.List, v)
 	case reflect.Ptr:
-		if n.Label != "" {
-			f.register(n.Label, v)
-		} else if label, ok := n.Value.(Label); ok {
-			v.Set(f.value(label))
-			return nil
-		}
-		return f.fillNode(n, allocIndirect(v))
+		return f.fillPtrFromNode(n, v)
 	}
 	return errors.New("Node.fill: unsupported type")
+}
+
+func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
+	if v.IsNil() {
+		return nil, nil // avoid infinite loop
+	}
+	addr := v.Pointer()
+	if label, ok := m.label(addr); ok {
+		return &Node{Value: label}, nil
+	}
+	node, err := m.newNode(indirect(v))
+	if err != nil {
+		return nil, err
+	}
+	m.register(addr, node)
+	return node, nil
+}
+
+func (f *filler) fillPtrFromNode(n *Node, v reflect.Value) error {
+	if n.Label != "" {
+		f.register(n.Label, v)
+	} else if label, ok := n.Value.(Label); ok {
+		v.Set(f.value(label))
+		return nil
+	}
+	return f.fillNode(n, allocIndirect(v))
 }
 
 func indirect(v reflect.Value) reflect.Value {
@@ -153,11 +161,28 @@ type maker struct {
 	serial int
 }
 
+// filler fills from a list
+type filler struct {
+	m map[Label]reflect.Value
+}
+
+func newFiller() *filler {
+	return &filler{make(map[Label]reflect.Value)}
+}
+
 func newMaker() *maker {
 	return &maker{
 		m:      make(map[uintptr]*Node),
 		serial: 1,
 	}
+}
+
+func (m *maker) register(p uintptr, node *Node) {
+	m.m[p] = node
+}
+
+func (f *filler) register(label Label, v reflect.Value) {
+	f.m[label] = v
 }
 
 func (m *maker) label(addr uintptr) (Label, bool) {
@@ -169,23 +194,6 @@ func (m *maker) label(addr uintptr) (Label, bool) {
 		return node.Label, true
 	}
 	return Label(0), false
-}
-
-func (m *maker) register(p uintptr, node *Node) {
-	m.m[p] = node
-}
-
-// filler fills from a list
-type filler struct {
-	m map[Label]reflect.Value
-}
-
-func newFiller() *filler {
-	return &filler{make(map[Label]reflect.Value)}
-}
-
-func (f *filler) register(label Label, v reflect.Value) {
-	f.m[label] = v
 }
 
 func (f *filler) value(label Label) reflect.Value {

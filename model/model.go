@@ -119,7 +119,12 @@ func (f *filler) fillNode(n *Node, v reflect.Value) error {
 	case reflect.Slice:
 		return f.fillList(n.List, v)
 	case reflect.Ptr:
-		return nil
+		if n.Label != "" {
+			f.register(n.Label, v)
+		} else if label, ok := n.Value.(Label); ok {
+			v.Set(f.value(label))
+			return nil
+		}
 		return f.fillNode(n, allocIndirect(v))
 	}
 	return errors.New("Node.fill: unsupported type")
@@ -159,7 +164,6 @@ func (m *maker) label(addr uintptr) (Label, bool) {
 	if node, ok := m.m[addr]; ok {
 		if node.Label == "" {
 			node.Label = Label(strconv.Itoa(m.serial))
-			p(node.Label)
 			m.serial++
 		}
 		return node.Label, true

@@ -35,7 +35,7 @@ func (l List) Fill(v interface{}) error {
 
 func newList(v reflect.Value) (List, error) {
 	switch v.Type().Kind() {
-	case reflect.Int:
+	case reflect.Int, reflect.String:
 		node, err := newNode(v)
 		if err != nil {
 			return nil, err
@@ -59,15 +59,21 @@ func newList(v reflect.Value) (List, error) {
 
 func newNode(v reflect.Value) (Node, error) {
 	switch v.Type().Kind() {
-	case reflect.Int:
+	case reflect.Int, reflect.String:
 		return Node{Value: v.Interface()}, nil
+	case reflect.Slice:
+		list, err := newList(v)
+		if err != nil {
+			return Node{}, err
+		}
+		return Node{List: list}, nil
 	}
 	return Node{}, errors.New("newNode: unsupported type")
 }
 
 func (l List) fill(v reflect.Value) error {
 	switch v.Type().Kind() {
-	case reflect.Int:
+	case reflect.Int, reflect.String:
 		if len(l) > 0 {
 			return l[0].fill(v)
 		}
@@ -88,9 +94,11 @@ func (l List) fill(v reflect.Value) error {
 
 func (n Node) fill(v reflect.Value) error {
 	switch v.Type().Kind() {
-	case reflect.Int:
+	case reflect.Int, reflect.String:
 		v.Set(reflect.ValueOf(n.Value))
 		return nil
+	case reflect.Slice:
+		return n.List.fill(v)
 	}
 	return errors.New("Node.fill: unsupported type")
 }

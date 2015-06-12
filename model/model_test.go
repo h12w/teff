@@ -14,7 +14,18 @@ func TestModel(t *testing.T) {
 		{nil, nil},
 
 		{1, List{{Value: 1}}},
+		{"a", List{{Value: "a"}}},
+
+		{[]int{}, List{}},
+		{[]string{"a"}, List{{Value: "a"}}},
 		{[]int{1, 2}, List{{Value: 1}, {Value: 2}}},
+		{
+			[][]int{{1, 2}, {3}},
+			List{
+				{List: List{{Value: 1}, {Value: 2}}},
+				{List: List{{Value: 3}}},
+			},
+		},
 	} {
 		{
 			list, err := New(testcase.v)
@@ -22,7 +33,7 @@ func TestModel(t *testing.T) {
 				t.Fatalf("testcase %d: New: %v", i, err)
 			}
 			if !reflect.DeepEqual(list, testcase.l) {
-				t.Fatalf("testcase %d: New: mismatch", i)
+				t.Fatalf("testcase %d: New: mismatch, expect \n%#v\ngot\n%#v", i, testcase.l, list)
 			}
 		}
 

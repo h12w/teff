@@ -234,7 +234,7 @@ An `interpreted_string` can contain any Unicode code points by escape sequences.
 
     interpreted_string ::= '"' (unicode_value | byte_value)* '"'
     ------------------     -------------------------------------
-     ↓                                 ↓
+      ↓                                ↓
     -----                  --------------------------
     value              ::= char_visible+ char_inline*
 
@@ -262,7 +262,7 @@ Boolean value is a `value` of either true of false.
 
     boolean    ::= "true" | "false"
     -------        ----------------
-     ↓                    ↓
+      ↓                   ↓
     -----          --------------------------
     value      ::= char_visible+ char_inline*
 
@@ -275,7 +275,7 @@ Numeric value is a `value` that encode a number.
 #### Integer
     integer    ::= sign? decimals
     -------        --------------
-     ↓                   ↓
+       ↓                 ↓
     -------        --------------------------
     value      ::= char_visible+ char_inline*
 
@@ -298,7 +298,7 @@ Float value is a `value` that encode a floating point number:
 
     complex    ::= sign? int_float sign int_float "i"
     -------        ----------------------------------
-     ↓                         ↓
+      ↓                        ↓
     -----          --------------------------
     value      ::= char_visible+ char_inline*
 
@@ -308,7 +308,7 @@ A date/time value is an `value` encoded with
 
     date_time  ::= rfc3339_date_time
     ---------      -----------------
-     ↓                    ↓
+      ↓                    ↓
     -----          --------------------------
     value      ::= char_visible+ char_inline*
 

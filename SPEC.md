@@ -232,9 +232,9 @@ An `interpreted_string` can contain any Unicode code points by escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
 
-    interpreted_string ::= '"' (unicode_value | byte_value)* '"'
-    ------------------     -------------------------------------
-      ↓                                ↓
+    interpreted_string ::= '"' quoted_char* '"'
+    ------------------     --------------------
+      ↓                             ↓
     -----                  --------------------------
     value              ::= char_visible+ char_inline*
 

@@ -98,7 +98,9 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
 
     teff_file       ::= list EOF
     list            ::= node*
-    node            ::= annotation* value (indent list unindent)?
+    node            ::= annotation* value (start list end)?
+    start           ::= indent
+    end             ::= unindent
 
 Extensions
 ----------
@@ -155,11 +157,11 @@ An array is represented as a list.
 To represent an array of array, the anonymous symbol `_` is introduced to
 represent the anonymous parent of a child array.
 
-    array_element ::= "_"    indent array unindent
-    -------------     ---    ------ ----- --------
-     ↓                 ↓       ↓     ↓       ↓
-    ----              -----  ------ ----  --------
-    node          ::= value (indent list  unindent)?
+    array_element ::= "_"    start array end
+    -------------     ---    ----- ----- ---
+     ↓                 ↓       ↓    ↓     ↓
+    ----              -----  ----- ----  ---
+    node          ::= value (start list  end)?
 
 e.g.
 
@@ -191,11 +193,11 @@ When the value of an key-value pair is encoded as a single `value`:
 
 When the value of an key-value pair is encoded as a `list`:
 
-    key_value     ::= map_key ":" indent map_value unindent
-    ---------         ----------- ------ --------- --------
-     ↓                  ↓           ↓       ↓         ↓
-    ----              -----       ------   ----    --------
-    node          ::= value      (indent   list    unindent)?
+    key_value     ::= map_key ":" start map_value end
+    ---------         ----------- ----- --------- ---
+     ↓                  ↓           ↓      ↓       ↓
+    ----              -----       -----   ----    ---
+    node          ::= value      (start   list    end)?
 
 Encoding of `map_key`:
 

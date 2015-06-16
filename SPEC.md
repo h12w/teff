@@ -64,15 +64,10 @@ A TEFF file is also a sequence of lines separated by `newline`.
     annotation      ::= "#" char_inline*
     value           ::= char_visible+ char_inline*
 
-### Tokens
+### Indents
 
-There are only five types of tokens used by TEFF grammar:
-
-1. value
-2. annotation
-3. indent
-4. unindent
-5. EOF
+    start           ::= indent
+    end             ::= unindent
 
 Tokens `indent` and `unindent` are emitted by the rules described below:
 
@@ -99,8 +94,6 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
     teff_file       ::= list EOF
     list            ::= node*
     node            ::= annotation* value (start list end)?
-    start           ::= indent
-    end             ::= unindent
 
 Extensions
 ----------

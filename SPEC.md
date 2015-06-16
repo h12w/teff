@@ -176,7 +176,8 @@ a node.
     ----              -----
     list          ::= node*
 
-When the value of an key-value pair is encoded as a single `value`:
+When the value of a key-value pair can be encoded as a single `value`, the
+key and the value together are encoded as a single `value`:
 
     key_value     ::= map_key ":" spaces? map_value
     ---------         -----------------------------
@@ -184,7 +185,7 @@ When the value of an key-value pair is encoded as a single `value`:
     ----              -----
     node          ::= value
 
-When the value of an key-value pair is encoded as a `list`:
+When the value of a key-value pair has to be encoded as a `list`:
 
     key_value     ::= map_key ":" start map_value end
     ---------         ----------- ----- --------- ---
@@ -194,10 +195,11 @@ When the value of an key-value pair is encoded as a `list`:
 
 Encoding of `map_key`:
 
-* string: refer to [`interpreted_string`](#interpreted-string)
+* identifier: such as struct field names, refer to [`raw_string`](#string)
+* string: refer to [`interpreted_string`](#string)
 * boolean: refer to [`boolean`](#boolean-value)
 * numeric: refer to [`numeric`](#numeric-value)
-* other: implementation specific, as long as the ending of the encoding is
+* others: implementation specific, as long as the ending of the encoding is
   recognized without relying on the `:`.
 
 ### Nil

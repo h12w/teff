@@ -76,7 +76,7 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
 2. Initially, an empty value is pushed onto the stack, and then the TEFF file is
    scanned line by line to get the `indent_space` of each line.
 3. When the top of the stack is the same as the `indent_space` of the current
-   line, no token is emitted.
+   line, neither `indent` nor `unindent` is emitted.
 4. When the top of the stack is a prefix of the `indent_space` of the current
    line, the `indent_space` is pushed onto the stack, and an `indent` token is
    emitted.

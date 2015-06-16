@@ -122,7 +122,13 @@ TEFF can represent a cyclic graph by reference annotation.
     annotation      ::= "#" char_inline*
 
 `ref_id` is a unique ID within a TEFF file. It should be defined only once but
-can be referenced multiple times by the `ref_id`.
+can be referenced multiple times by `reference`s.
+
+    reference       ::= ref_id
+    ---------           ------
+      ↓                    ↓
+    -----               --------------------------
+    value           ::= char_visible+ char_inline*
 
 TEFF can optionally represent type by type annotation.
 

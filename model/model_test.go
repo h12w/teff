@@ -96,7 +96,6 @@ func TestModel(t *testing.T) {
 				t.Fatalf("testcase %d: New: mismatch, expect \n%v\ngot\n%v", i, testcase.l, list)
 			}
 		}
-
 		{
 			v := newValueOf(testcase.v)
 			if err := Fill(testcase.l, v); err != nil {

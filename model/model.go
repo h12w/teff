@@ -105,19 +105,26 @@ func (m *maker) listFromStruct(v reflect.Value) (List, error) {
 		if err != nil {
 			return nil, err
 		}
-		if node.List == nil {
+		if node.List == nil && !isLabel(node.Value) {
 			node.Value = IdentValue{Identifier(v.Type().Field(i).Name), node.Value}
 		}
 		l[i] = node
 	}
 	return l, nil
 }
+func isLabel(v interface{}) bool {
+	_, ok := v.(Label)
+	return ok
+}
 
 func (f *filler) structFromList(l List, v reflect.Value) error {
 	for _, n := range l {
-		iv := n.Value.(IdentValue)
-		if field := v.FieldByName(string(iv.Ident)); field.IsValid() {
-			field.Set(reflect.ValueOf(iv.Value))
+		if iv, ok := n.Value.(IdentValue); ok {
+			if field := v.FieldByName(string(iv.Ident)); field.IsValid() {
+				if err := f.fromNode(n, field); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -144,10 +151,13 @@ func (m *maker) node(v reflect.Value) (*Node, error) {
 func (f *filler) fromNode(n *Node, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		if _, ok := n.Value.(Label); ok {
-			return nil
+		switch src := n.Value.(type) {
+		case IdentValue:
+			v.Set(reflect.ValueOf(src.Value))
+		case Label:
+		default:
+			v.Set(reflect.ValueOf(src))
 		}
-		v.Set(reflect.ValueOf(n.Value))
 		return nil
 	case reflect.Slice:
 		return f.fromList(n.List, v)
@@ -159,7 +169,7 @@ func (f *filler) fromNode(n *Node, v reflect.Value) error {
 
 func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 	if v.IsNil() {
-		return nil, nil // avoid infinite loop
+		return &Node{}, nil // avoid infinite loop
 	}
 	addr := v.Pointer()
 	if label, ok := m.label(addr); ok {

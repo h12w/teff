@@ -31,54 +31,54 @@ func New(v interface{}) (List, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return newMaker().newList(reflect.ValueOf(v))
+	return newMaker().list(reflect.ValueOf(v))
 }
 
 func Fill(l List, v interface{}) error {
 	if v == nil {
 		return nil
 	}
-	return newFiller().fillFromList(l, reflect.ValueOf(v))
+	return newFiller().fromList(l, reflect.ValueOf(v))
 }
 
-func (m *maker) newList(v reflect.Value) (List, error) {
+func (m *maker) list(v reflect.Value) (List, error) {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		node, err := m.newNode(v)
+		node, err := m.node(v)
 		if err != nil {
 			return nil, err
 		}
 		return List{node}, nil
 	case reflect.Slice:
-		return m.newListFromSlice(v)
+		return m.listFromSlice(v)
 	case reflect.Struct:
-		return m.newListFromStruct(v)
+		return m.listFromStruct(v)
 	case reflect.Ptr:
-		return m.newList(indirect(v))
+		return m.list(indirect(v))
 	}
-	return nil, errors.New("newList: unsupported type")
+	return nil, errors.New("maker.list: unsupported type")
 }
 
-func (f *filler) fillFromList(l List, v reflect.Value) error {
+func (f *filler) fromList(l List, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
 		if len(l) > 0 {
-			return f.fillNode(l[0], v)
+			return f.fromNode(l[0], v)
 		}
 	case reflect.Slice:
-		return f.fillSliceFromList(l, v)
+		return f.sliceFromList(l, v)
 	case reflect.Struct:
-		return f.fillStructFromList(l, v)
+		return f.structFromList(l, v)
 	case reflect.Ptr:
-		return f.fillFromList(l, allocIndirect(v))
+		return f.fromList(l, allocIndirect(v))
 	}
 	return errors.New("List.fill: unsupported type")
 }
 
-func (m *maker) newListFromSlice(v reflect.Value) (List, error) {
+func (m *maker) listFromSlice(v reflect.Value) (List, error) {
 	l := make(List, v.Len())
 	for i := 0; i < v.Len(); i++ {
-		node, err := m.newNode(v.Index(i))
+		node, err := m.node(v.Index(i))
 		if err != nil {
 			return nil, err
 		}
@@ -87,21 +87,21 @@ func (m *maker) newListFromSlice(v reflect.Value) (List, error) {
 	return l, nil
 }
 
-func (f *filler) fillSliceFromList(l List, v reflect.Value) error {
+func (f *filler) sliceFromList(l List, v reflect.Value) error {
 	for i, n := range l {
 		v.Set(reflect.Append(v, reflect.New(v.Type().Elem()).Elem()))
 		elem := v.Index(i)
-		if err := f.fillNode(n, elem); err != nil {
+		if err := f.fromNode(n, elem); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *maker) newListFromStruct(v reflect.Value) (List, error) {
+func (m *maker) listFromStruct(v reflect.Value) (List, error) {
 	l := make(List, v.NumField())
 	for i := 0; i < v.NumField(); i++ {
-		node, err := m.newNode(v.Field(i))
+		node, err := m.node(v.Field(i))
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (m *maker) newListFromStruct(v reflect.Value) (List, error) {
 	return l, nil
 }
 
-func (f *filler) fillStructFromList(l List, v reflect.Value) error {
+func (f *filler) structFromList(l List, v reflect.Value) error {
 	for _, n := range l {
 		iv := n.Value.(IdentValue)
 		if field := v.FieldByName(string(iv.Ident)); field.IsValid() {
@@ -123,14 +123,14 @@ func (f *filler) fillStructFromList(l List, v reflect.Value) error {
 	return nil
 }
 
-func (m *maker) newNode(v reflect.Value) (*Node, error) {
+func (m *maker) node(v reflect.Value) (*Node, error) {
 	switch v.Type().Kind() {
 	case reflect.Int:
 		return &Node{Value: int(v.Int())}, nil
 	case reflect.String:
 		return &Node{Value: v.String()}, nil
 	case reflect.Slice:
-		list, err := m.newList(v)
+		list, err := m.list(v)
 		if err != nil {
 			return nil, err
 		}
@@ -138,10 +138,10 @@ func (m *maker) newNode(v reflect.Value) (*Node, error) {
 	case reflect.Ptr:
 		return m.nodeFromPtr(v)
 	}
-	return nil, errors.New("newNode: unsupported type")
+	return nil, errors.New("node: unsupported type")
 }
 
-func (f *filler) fillNode(n *Node, v reflect.Value) error {
+func (f *filler) fromNode(n *Node, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
 		if _, ok := n.Value.(Label); ok {
@@ -150,9 +150,9 @@ func (f *filler) fillNode(n *Node, v reflect.Value) error {
 		v.Set(reflect.ValueOf(n.Value))
 		return nil
 	case reflect.Slice:
-		return f.fillFromList(n.List, v)
+		return f.fromList(n.List, v)
 	case reflect.Ptr:
-		return f.fillPtrFromNode(n, v)
+		return f.ptrFromNode(n, v)
 	}
 	return errors.New("Node.fill: unsupported type")
 }
@@ -165,7 +165,7 @@ func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 	if label, ok := m.label(addr); ok {
 		return &Node{Value: label}, nil
 	}
-	node, err := m.newNode(indirect(v))
+	node, err := m.node(indirect(v))
 	if err != nil {
 		return nil, err
 	}
@@ -173,14 +173,14 @@ func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 	return node, nil
 }
 
-func (f *filler) fillPtrFromNode(n *Node, v reflect.Value) error {
+func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
 	if n.Label != "" {
 		f.register(n.Label, v)
 	} else if label, ok := n.Value.(Label); ok {
 		v.Set(f.value(label))
 		return nil
 	}
-	return f.fillNode(n, allocIndirect(v))
+	return f.fromNode(n, allocIndirect(v))
 }
 
 // maker makes a new List

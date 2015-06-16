@@ -75,14 +75,14 @@ func TestModel(t *testing.T) {
 		//		I1 *int
 		//		I2 *int
 		//	} {
-		//		i := 1
+		//		i := 3
 		//		return struct {
 		//			I1 *int
 		//			I2 *int
 		//		}{&i, &i}
 		//	}(),
 		//	List{
-		//		{Value: IdentValue{"I1", 1}, Label: "1"},
+		//		{Value: IdentValue{"I1", 3}, Label: "1"},
 		//		{Value: Label("1")},
 		//	},
 		//},

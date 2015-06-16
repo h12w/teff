@@ -12,14 +12,20 @@ import (
 	"strconv"
 )
 
-type List []*Node
-
-type Node struct {
-	Label Label
-	Value interface{}
-	List  List
-}
-type Label string
+type (
+	List []*Node
+	Node struct {
+		Label Label
+		Value interface{}
+		List  List
+	}
+	Label      string
+	IdentValue struct {
+		Ident Identifier
+		Value interface{}
+	}
+	Identifier string
+)
 
 func New(v interface{}) (List, error) {
 	if v == nil {
@@ -53,6 +59,23 @@ func (m *maker) newList(v reflect.Value) (List, error) {
 			l[i] = node
 		}
 		return l, nil
+	case reflect.Struct:
+		l := make(List, v.NumField())
+		for i := 0; i < v.NumField(); i++ {
+			node, err := m.newNode(v.Field(i))
+			if err != nil {
+				return nil, err
+			}
+			if node.List == nil {
+				if label, ok := node.Value.(Label); ok {
+					node.Value = label
+				} else {
+					node.Value = IdentValue{Identifier(v.Type().Field(i).Name), node.Value}
+				}
+			}
+			l[i] = node
+		}
+		return l, nil
 	case reflect.Ptr:
 		return m.newList(indirect(v))
 	}
@@ -74,6 +97,18 @@ func (f *filler) fillList(l List, v reflect.Value) error {
 			}
 		}
 		return nil
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			fieldName := Identifier(v.Type().Field(i).Name)
+			for _, n := range l {
+				iv := n.Value.(IdentValue)
+				if iv.Ident == fieldName {
+					v.Field(i).Set(reflect.ValueOf(iv.Value))
+					break
+				}
+			}
+		}
+		return nil
 	case reflect.Ptr:
 		return f.fillList(l, allocIndirect(v))
 	}
@@ -82,8 +117,10 @@ func (f *filler) fillList(l List, v reflect.Value) error {
 
 func (m *maker) newNode(v reflect.Value) (*Node, error) {
 	switch v.Type().Kind() {
-	case reflect.Int, reflect.String:
-		return &Node{Value: v.Interface()}, nil
+	case reflect.Int:
+		return &Node{Value: int(v.Int())}, nil
+	case reflect.String:
+		return &Node{Value: v.String()}, nil
 	case reflect.Slice:
 		list, err := m.newList(v)
 		if err != nil {

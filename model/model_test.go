@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+/*
+TODO:
+1. mismatch type for struct field
+2. ignore setting unexported field
+3. reading unexported field
+*/
+
 func TestModel(t *testing.T) {
 	for i, testcase := range []struct {
 		v interface{}
@@ -18,7 +25,10 @@ func TestModel(t *testing.T) {
 		{"a", List{{Value: "a"}}},
 		{ps("a"), List{{Value: "a"}}},
 
-		{[]int{}, List{}},
+		{
+			[]int{},
+			List{},
+		},
 		{
 			[]string{"a"},
 			List{{Value: "a"}},
@@ -46,6 +56,36 @@ func TestModel(t *testing.T) {
 			}(),
 			List{{Label: Label("1"), Value: 3}, {Value: Label("1")}},
 		},
+		{
+			struct{}{},
+			List{},
+		},
+		{
+			struct {
+				I int
+				S string
+			}{1, "a"},
+			List{
+				{Value: IdentValue{"I", 1}},
+				{Value: IdentValue{"S", "a"}},
+			},
+		},
+		//{
+		//	func() struct {
+		//		I1 *int
+		//		I2 *int
+		//	} {
+		//		i := 1
+		//		return struct {
+		//			I1 *int
+		//			I2 *int
+		//		}{&i, &i}
+		//	}(),
+		//	List{
+		//		{Value: IdentValue{"I1", 1}, Label: "1"},
+		//		{Value: Label("1")},
+		//	},
+		//},
 	} {
 		{
 			list, err := New(testcase.v)

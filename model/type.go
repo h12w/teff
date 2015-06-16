@@ -16,7 +16,7 @@ type (
 )
 
 // Reference returns RefID, true if the node is a reference to another node.
-// Otherwise, it will return 0, false.
+// Otherwise, it will return "", false.
 func (n *Node) Reference() (refID RefID, ok bool) {
 	v := n.Value
 	if iv, ok := n.Value.(IdentValue); ok {

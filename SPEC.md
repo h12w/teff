@@ -45,29 +45,29 @@ in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
 U+0020 (space) are considered invalid and should not appear in a TEFF file.
 
-    char_valid      ::= char_inline | char_break
-    char_inline     ::= char_visible | char_space
-    char_visible    ::= [^\x00-\x20]
-    char_space      ::= [ \t]
-    char_break      ::= [\r\n]
+    char_valid   ::= char_inline | char_break
+    char_inline  ::= char_visible | char_space
+    char_visible ::= [^\x00-\x20]
+    char_space   ::= [ \t]
+    char_break   ::= [\r\n]
 
 ### Lines
 
 A TEFF file is also a sequence of lines separated by `newline`.
 
-    line            ::= empty_line | valid_line
-    empty_line      ::= char_space* newline
-    newline         ::= char_break | "\r\n" | EOF
-    EOF             ::= <end of file>
-    valid_line      ::= indent_space (annotation | value) newline
-    indent_space    ::= char_space*
-    annotation      ::= "#" char_inline*
-    value           ::= char_visible+ char_inline*
+    line         ::= empty_line | valid_line
+    empty_line   ::= char_space* newline
+    newline      ::= char_break | "\r\n" | EOF
+    EOF          ::= <end of file>
+    valid_line   ::= indent_space (annotation | value) newline
+    indent_space ::= char_space*
+    annotation   ::= "#" char_inline*
+    value        ::= char_visible+ char_inline*
 
 ### Indents
 
-    start           ::= indent
-    end             ::= unindent
+    start        ::= indent
+    end          ::= unindent
 
 Tokens `indent` and `unindent` are emitted by the rules described below:
 
@@ -91,9 +91,9 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
 
 ### Grammer
 
-    teff_file       ::= list EOF
-    list            ::= node*
-    node            ::= annotation* value (start list end)?
+    teff_file    ::= list EOF
+    list         ::= node*
+    node         ::= annotation* value (start list end)?
 
 Extensions
 ----------
@@ -170,28 +170,28 @@ e.g.
 A map is represented with a list of key-value pairs. Each pair is represented as
 a node.
 
-    map           ::= key_value*
-    ---               ----------
-     ↓                  ↓
-    ----              -----
-    list          ::= node*
+    map       ::= key_value*
+    ---           ----------
+     ↓              ↓
+    ----          -----
+    list      ::= node*
 
 When the value of a key-value pair can be encoded as a single `value`, the
 key and the value together are encoded as a single `value`:
 
-    key_value     ::= map_key ":" spaces? map_value
-    ---------         -----------------------------
-     ↓                  ↓
-    ----              -----
-    node          ::= value
+    key_value ::= map_key ":" spaces? map_value
+    ---------     -----------------------------
+     ↓              ↓
+    ----          -----
+    node      ::= value
 
 When the value of a key-value pair has to be encoded as a `list`:
 
-    key_value     ::= map_key ":" start map_value end
-    ---------         ----------- ----- --------- ---
-     ↓                  ↓           ↓      ↓       ↓
-    ----              -----       -----   ----    ---
-    node          ::= value      (start   list    end)?
+    key_value ::= map_key ":" start map_value end
+    ---------     ----------- ----- --------- ---
+     ↓              ↓           ↓      ↓       ↓
+    ----          -----       -----   ----    ---
+    node      ::= value      (start   list    end)?
 
 Encoding of `map_key`:
 
@@ -206,11 +206,11 @@ Encoding of `map_key`:
 
 The special `value` nil is used to represent an uninitialized nullable node.
 
-    nil    ::= "nil"
-    ---        -----
-     ↓           ↓
-    -----      --------------------------
-    value  ::= char_visible+ char_inline*
+    nil   ::= "nil"
+    ---       -----
+     ↓          ↓
+    -----     --------------------------
+    value ::= char_visible+ char_inline*
 
 ### String
 A string is represented as either a `raw_string` or an `interpreted_string` (double
@@ -258,11 +258,11 @@ defined by [Golang Regexp](http://golang.org/pkg/regexp/syntax/).
 ### Boolean value
 Boolean value is a `value` of either true of false.
 
-    boolean    ::= "true" | "false"
-    -------        ----------------
-      ↓                   ↓
-    -----          --------------------------
-    value      ::= char_visible+ char_inline*
+    boolean ::= "true" | "false"
+    -------     ----------------
+      ↓                ↓
+    -----       --------------------------
+    value   ::= char_visible+ char_inline*
 
 ### Numeric value
 Numeric value is a `value` that encode a number.
@@ -304,11 +304,11 @@ Float value is a `value` that encode a floating point number:
 A date/time value is an `value` encoded with
 [RFC3339](http://www.rfc-editor.org/rfc/rfc3339.txt)
 
-    date_time  ::= rfc3339_date_time
-    ---------      -----------------
-      ↓                    ↓
-    -----          --------------------------
-    value      ::= char_visible+ char_inline*
+    date_time ::= rfc3339_date_time
+    ---------     -----------------
+      ↓                   ↓
+    -----         --------------------------
+    value     ::= char_visible+ char_inline*
 
 e.g.
 
@@ -317,15 +317,15 @@ e.g.
 ### IP address
 An IP address is either an IPv4 or IPv6 address.
 
-    ip         ::= ipv4 | ipv6
+    ip    ::= ipv4 | ipv6
 
 An IPv4 address value is an `value` encoded with dot-decimal notation:
 
-    ipv4       ::= decimals "." decimals "." decimals "." decimals
-    ----           -----------------------------------------------
-     ↓                         ↓
-    -----          --------------------------
-    value      ::= char_visible+ char_inline*
+    ipv4  ::= decimals "." decimals "." decimals "." decimals
+    ----      -----------------------------------------------
+     ↓                    ↓
+    -----     --------------------------
+    value ::= char_visible+ char_inline*
 
 e.g.
 
@@ -334,11 +334,11 @@ e.g.
 An IPv6 address value is an `value` encoded with
 [RFC5952](http://www.rfc-editor.org/rfc/rfc5952.txt).
 
-    ipv6       ::= rfc5952_ipv6_address
-    ----           --------------------
-     ↓                      ↓
-    -----          --------------------------
-    value      ::= char_visible+ char_inline*
+    ipv6  ::= rfc5952_ipv6_address
+    ----      --------------------
+     ↓                 ↓
+    -----     --------------------------
+    value ::= char_visible+ char_inline*
 
 e.g.
 

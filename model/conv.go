@@ -1,6 +1,6 @@
 /*
 Package model converts almost any Go data structures into a tree model:
-1. cyclic references are replaced with labels
+1. cyclic references are replaced with RefIDs
 2. pointer & interfaces are replaced with values
 3. reflections are hidden from outside if possible
 */
@@ -134,8 +134,8 @@ func (f *filler) fromNode(n *Node, v reflect.Value) error {
 	case reflect.Int, reflect.String:
 		switch src := n.Value.(type) {
 		case IdentValue:
-			if label, ok := src.Value.(RefID); ok {
-				_ = label
+			if refID, ok := src.Value.(RefID); ok {
+				_ = refID
 			} else {
 				v.Set(reflect.ValueOf(src.Value))
 			}
@@ -156,8 +156,8 @@ func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 		return &Node{}, nil // avoid infinite loop
 	}
 	addr := v.Pointer()
-	if label, ok := m.label(addr); ok {
-		return &Node{Value: label}, nil
+	if refID, ok := m.refID(addr); ok {
+		return &Node{Value: refID}, nil
 	}
 	node, err := m.node(indirect(v))
 	if err != nil {
@@ -170,8 +170,8 @@ func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
 	if n.RefID != "" {
 		f.register(n.RefID, v)
-	} else if label, ok := n.reference(); ok {
-		v.Set(f.value(label))
+	} else if refID, ok := n.Reference(); ok {
+		v.Set(f.value(refID))
 		return nil
 	}
 	return f.fromNode(n, allocIndirect(v))
@@ -203,11 +203,11 @@ func (m *maker) register(p uintptr, node *Node) {
 	m.m[p] = node
 }
 
-func (f *filler) register(label RefID, v reflect.Value) {
-	f.m[label] = v
+func (f *filler) register(refID RefID, v reflect.Value) {
+	f.m[refID] = v
 }
 
-func (m *maker) label(addr uintptr) (RefID, bool) {
+func (m *maker) refID(addr uintptr) (RefID, bool) {
 	if node, ok := m.m[addr]; ok {
 		if node.RefID == "" {
 			node.RefID = RefID(strconv.Itoa(m.serial))
@@ -218,8 +218,8 @@ func (m *maker) label(addr uintptr) (RefID, bool) {
 	return RefID(0), false
 }
 
-func (f *filler) value(label RefID) reflect.Value {
-	return f.m[label]
+func (f *filler) value(refID RefID) reflect.Value {
+	return f.m[refID]
 }
 
 func indirect(v reflect.Value) reflect.Value {

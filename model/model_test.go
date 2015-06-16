@@ -83,7 +83,7 @@ func TestModel(t *testing.T) {
 		//	}(),
 		//	List{
 		//		{Value: IdentValue{"I1", 3}, Label: "1"},
-		//		{Value: Label("1")},
+		//		{Value: IdentValue{"I2", Label("1")}},
 		//	},
 		//},
 	} {

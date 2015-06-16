@@ -105,16 +105,12 @@ func (m *maker) listFromStruct(v reflect.Value) (List, error) {
 		if err != nil {
 			return nil, err
 		}
-		if node.List == nil && !isLabel(node.Value) {
+		if node.List == nil {
 			node.Value = IdentValue{Identifier(v.Type().Field(i).Name), node.Value}
 		}
 		l[i] = node
 	}
 	return l, nil
-}
-func isLabel(v interface{}) bool {
-	_, ok := v.(Label)
-	return ok
 }
 
 func (f *filler) structFromList(l List, v reflect.Value) error {
@@ -153,8 +149,11 @@ func (f *filler) fromNode(n *Node, v reflect.Value) error {
 	case reflect.Int, reflect.String:
 		switch src := n.Value.(type) {
 		case IdentValue:
-			v.Set(reflect.ValueOf(src.Value))
-		case Label:
+			if label, ok := src.Value.(Label); ok {
+				p(label)
+			} else {
+				v.Set(reflect.ValueOf(src.Value))
+			}
 		default:
 			v.Set(reflect.ValueOf(src))
 		}

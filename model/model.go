@@ -150,7 +150,7 @@ func (f *filler) fromNode(n *Node, v reflect.Value) error {
 		switch src := n.Value.(type) {
 		case IdentValue:
 			if label, ok := src.Value.(Label); ok {
-				p(label)
+				_ = label
 			} else {
 				v.Set(reflect.ValueOf(src.Value))
 			}
@@ -185,11 +185,18 @@ func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
 	if n.Label != "" {
 		f.register(n.Label, v)
-	} else if label, ok := n.Value.(Label); ok {
+	} else if label, ok := n.value().(Label); ok {
 		v.Set(f.value(label))
 		return nil
 	}
 	return f.fromNode(n, allocIndirect(v))
+}
+
+func (n *Node) value() interface{} {
+	if v, ok := n.Value.(IdentValue); ok {
+		return v.Value
+	}
+	return n.Value
 }
 
 // maker makes a new List

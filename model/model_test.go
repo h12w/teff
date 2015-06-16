@@ -70,22 +70,22 @@ func TestModel(t *testing.T) {
 				{Value: IdentValue{"S", "a"}},
 			},
 		},
-		//{
-		//	func() struct {
-		//		I1 *int
-		//		I2 *int
-		//	} {
-		//		i := 3
-		//		return struct {
-		//			I1 *int
-		//			I2 *int
-		//		}{&i, &i}
-		//	}(),
-		//	List{
-		//		{Value: IdentValue{"I1", 3}, Label: "1"},
-		//		{Value: IdentValue{"I2", Label("1")}},
-		//	},
-		//},
+		{
+			func() struct {
+				I1 *int
+				I2 *int
+			} {
+				i := 3
+				return struct {
+					I1 *int
+					I2 *int
+				}{&i, &i}
+			}(),
+			List{
+				{Label: "1", Value: IdentValue{"I1", 3}},
+				{Value: IdentValue{"I2", Label("1")}},
+			},
+		},
 	} {
 		{
 			list, err := New(testcase.v)

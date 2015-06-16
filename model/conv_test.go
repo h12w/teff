@@ -54,7 +54,7 @@ func TestModel(t *testing.T) {
 				i := pi(3)
 				return []*int{i, i}
 			}(),
-			List{{Label: Label("1"), Value: 3}, {Value: Label("1")}},
+			List{{RefID: RefID("1"), Value: 3}, {Value: RefID("1")}},
 		},
 		{
 			struct{}{},
@@ -82,10 +82,27 @@ func TestModel(t *testing.T) {
 				}{&i, &i}
 			}(),
 			List{
-				{Label: "1", Value: IdentValue{"I1", 3}},
-				{Value: IdentValue{"I2", Label("1")}},
+				{RefID: "1", Value: IdentValue{"I1", 3}},
+				{Value: IdentValue{"I2", RefID("1")}},
 			},
 		},
+		//{
+		//	func() struct {
+		//		I1 int
+		//		I2 *int
+		//	} {
+		//		s := struct {
+		//			I1 int
+		//			I2 *int
+		//		}{3, nil}
+		//		s.I2 = &s.I1
+		//		return s
+		//	}(),
+		//	List{
+		//		{RefID: "1", Value: IdentValue{"I1", 3}},
+		//		{Value: IdentValue{"I2", RefID("1")}},
+		//	},
+		//},
 	} {
 		{
 			list, err := New(testcase.v)

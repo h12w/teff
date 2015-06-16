@@ -12,21 +12,6 @@ import (
 	"strconv"
 )
 
-type (
-	List []*Node
-	Node struct {
-		Label Label
-		Value interface{}
-		List  List
-	}
-	Label      string
-	IdentValue struct {
-		Ident Identifier
-		Value interface{}
-	}
-	Identifier string
-)
-
 func New(v interface{}) (List, error) {
 	if v == nil {
 		return nil, nil
@@ -149,7 +134,7 @@ func (f *filler) fromNode(n *Node, v reflect.Value) error {
 	case reflect.Int, reflect.String:
 		switch src := n.Value.(type) {
 		case IdentValue:
-			if label, ok := src.Value.(Label); ok {
+			if label, ok := src.Value.(RefID); ok {
 				_ = label
 			} else {
 				v.Set(reflect.ValueOf(src.Value))
@@ -183,20 +168,13 @@ func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 }
 
 func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
-	if n.Label != "" {
-		f.register(n.Label, v)
-	} else if label, ok := n.value().(Label); ok {
+	if n.RefID != "" {
+		f.register(n.RefID, v)
+	} else if label, ok := n.reference(); ok {
 		v.Set(f.value(label))
 		return nil
 	}
 	return f.fromNode(n, allocIndirect(v))
-}
-
-func (n *Node) value() interface{} {
-	if v, ok := n.Value.(IdentValue); ok {
-		return v.Value
-	}
-	return n.Value
 }
 
 // maker makes a new List
@@ -207,11 +185,11 @@ type maker struct {
 
 // filler fills from a list
 type filler struct {
-	m map[Label]reflect.Value
+	m map[RefID]reflect.Value
 }
 
 func newFiller() *filler {
-	return &filler{make(map[Label]reflect.Value)}
+	return &filler{make(map[RefID]reflect.Value)}
 }
 
 func newMaker() *maker {
@@ -225,22 +203,22 @@ func (m *maker) register(p uintptr, node *Node) {
 	m.m[p] = node
 }
 
-func (f *filler) register(label Label, v reflect.Value) {
+func (f *filler) register(label RefID, v reflect.Value) {
 	f.m[label] = v
 }
 
-func (m *maker) label(addr uintptr) (Label, bool) {
+func (m *maker) label(addr uintptr) (RefID, bool) {
 	if node, ok := m.m[addr]; ok {
-		if node.Label == "" {
-			node.Label = Label(strconv.Itoa(m.serial))
+		if node.RefID == "" {
+			node.RefID = RefID(strconv.Itoa(m.serial))
 			m.serial++
 		}
-		return node.Label, true
+		return node.RefID, true
 	}
-	return Label(0), false
+	return RefID(0), false
 }
 
-func (f *filler) value(label Label) reflect.Value {
+func (f *filler) value(label RefID) reflect.Value {
 	return f.m[label]
 }
 

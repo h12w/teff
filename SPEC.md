@@ -22,16 +22,17 @@ any two extensions may have the same representation without causing any conflict
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
-The major difference between TEFF and OGDL is that TEFF disallow mutiple values
-occupying a single line. This constraint simplifies the parser, opens more
-possibilities for extensions and makes it clearer to compare two files line by line.
+The major difference between TEFF and OGDL is that TEFF core disallow mutiple
+values occupying a single line (unless a custom encoding is defined). This
+constraint simplifies the parser, opens more possibilities for extensions and
+makes it clearer to compare two files line by line.
 
 Notation
 --------
 The syntax is specified using a variant of Extended Backus-Naur Form, based on
 [W3C XML EBNF](http://www.w3.org/TR/xml11/#sec-notation),
 which is extended with the following definitions:
-* Escape sequences defined in section [Interpreted string](#interpreted-string).
+* Escape sequences defined in section [Escape sequences](#escape-sequences).
 * Regular expressions defined in section [Regular expression](#regular-expression).
 * Text enclosed by <> is a description.
 
@@ -46,29 +47,36 @@ in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
 U+0020 (space) are considered invalid and should not appear in a TEFF file.
 
-    char_valid   ::= char_inline | char_break
-    char_inline  ::= char_visible | char_space
-    char_visible ::= [^\x00-\x20]
-    char_space   ::= [ \t]
-    char_break   ::= [\r\n]
+    char_valid     ::= char_inline | char_break
+    char_inline    ::= char_visible | char_space
+    char_visible   ::= [^\x00-\x20]
+    char_space     ::= [ \t]
+    char_break     ::= [\r\n]
+    unicode_letter ::= <a Unicode code point classified as "Letter">
+    unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
+    letter_digit   ::= unicode_letter | unicode_digit | "_"
 
 ### Lines
 
 A TEFF file is also a sequence of lines separated by `newline`.
 
-    line         ::= empty_line | valid_line
-    empty_line   ::= char_space* newline
-    newline      ::= char_break | "\r\n" | EOF
-    EOF          ::= <end of file>
-    valid_line   ::= indent_space (annotation | value) newline
-    indent_space ::= char_space*
-    annotation   ::= "#" char_inline*
-    value        ::= char_visible+ char_inline*
+    line           ::= empty_line | valid_line
+    empty_line     ::= char_space* newline
+    newline        ::= char_break | "\r\n" | EOF
+    EOF            ::= <end of file>
+    valid_line     ::= indent_space (annotation | value) newline
+    indent_space   ::= char_space*
+    annotation     ::= "#" char_inline*
+    value          ::= reference | line_value
+    reference      ::= ref_id
+    ref_id         ::= "^" letter_digit+
+    line_value     ::= <line_string except annotation & reference>
+    line_string    ::= char_visible+ char_inline*
 
 ### Indents
 
-    start        ::= indent
-    end          ::= unindent
+    start          ::= indent
+    end            ::= unindent
 
 Tokens `indent` and `unindent` are emitted by the rules described below:
 
@@ -90,35 +98,6 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
    the stack is popped and an `unindent` token is emitted until the length of
    the stack becomes 1.
 
-### Reference annotation
-
-Reference annotation is a special extension to the annotation token, it is
-described in the core section because the extensions should not have
-conflictions with reference annotation.
-
-    unicode_letter  ::= <a Unicode code point classified as "Letter">
-    unicode_digit   ::= <a Unicode code point classified as "Decimal Digit">
-    letter_digit    ::= unicode_letter | unicode_digit | "_"
-
-TEFF can represent a cyclic graph by reference annotation.
-
-    ref_id          ::= "^" letter_digit+
-
-    ref_annotation  ::= "#" spaces? ref_id
-    --------------      --- --------------
-        ↓                ↓       ↓
-    ----------          --- ------------
-    annotation      ::= "#" char_inline*
-
-`ref_id` is a unique ID within a TEFF file. It should be defined only once but
-can be referenced multiple times by `reference`s.
-
-    reference       ::= ref_id
-    ---------           ------
-      ↓                    ↓
-    -----               --------------------------
-    value           ::= char_visible+ char_inline*
-
 ### Grammer
 
     teff_file    ::= list EOF
@@ -131,9 +110,20 @@ In this section, format extensions for annotations & common data types are
 specified. These definitions should cover all the builtin types and some of the
 important types in standard libraries.
 
-### Type annotation
+### Type & reference annotations
 
-TEFF can optionally represent type by type annotation.
+TEFF can represent a cyclic graph by reference annotation.
+
+    ref_annotation  ::= "#" spaces? ref_id
+    --------------      --- --------------
+        ↓                ↓       ↓
+    ----------          --- ------------
+    annotation      ::= "#" char_inline*
+
+`ref_id` is a unique ID within a TEFF file. It should be defined only once but
+can be referenced multiple times by `reference`s.
+
+TEFF can optionally represent data type by type annotation.
 
     type_label      ::= "<" letter_digit+ ">"
 
@@ -242,7 +232,7 @@ An `interpreted_string` can contain any Unicode code points by escape sequences.
     -----                  --------------------------
     value              ::= char_visible+ char_inline*
 
-Escape sequences:
+#### Escape sequences
 
     \a    U+0007 alert or bell
     \b    U+0008 backspace

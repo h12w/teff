@@ -14,7 +14,9 @@ func (t TokenType) String() string {
 	switch t {
 	case Annotation:
 		return "a"
-	case Value:
+	case Reference:
+		return "r"
+	case LineValue:
 		return "s"
 	case Indent:
 		return "in"
@@ -51,6 +53,8 @@ func TestScan(t *testing.T) {
 		{"x\ny", "<x:s> <y:s> <eof>"},
 		{"#x", "<x:a> <eof>"},
 		{"#x\n#y", "<x:a> <y:a> <eof>"},
+
+		{"^x", "<x:r> <eof>"},
 
 		{"\nx", "<x:s> <eof>"},
 		{"  \nx", "<x:s> <eof>"},

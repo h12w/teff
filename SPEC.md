@@ -52,9 +52,6 @@ U+0020 (space) are considered invalid and should not appear in a TEFF file.
     char_visible   ::= [^\x00-\x20]
     char_space     ::= [ \t]
     char_break     ::= [\r\n]
-    unicode_letter ::= <a Unicode code point classified as "Letter">
-    unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
-    letter_digit   ::= unicode_letter | unicode_digit | "_"
 
 ### Lines
 
@@ -68,8 +65,8 @@ A TEFF file is also a sequence of lines separated by `newline`.
     indent_space   ::= char_space*
     annotation     ::= "#" char_inline*
     value          ::= reference | line_value
-    reference      ::= ref_id
-    ref_id         ::= "^" letter_digit+
+    reference      ::= "^" ref_id
+    ref_id         ::= char_inline+
     line_value     ::= <line_string except annotation & reference>
     line_string    ::= char_visible+ char_inline*
 
@@ -111,6 +108,14 @@ specified. These definitions should cover all the builtin types and some of the
 important types in standard libraries.
 
 ### Type & reference annotations
+
+Implementation restriction: for readability, `ref_id` can be further constrained
+to contain only `letter_digit`.
+
+    unicode_letter ::= <a Unicode code point classified as "Letter">
+    unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
+    letter_digit   ::= unicode_letter | unicode_digit | "_"
+    ref_id         ::= "^" letter_digit+
 
 TEFF can represent a cyclic graph by reference annotation.
 

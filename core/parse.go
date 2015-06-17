@@ -18,8 +18,11 @@ func Parse(reader io.Reader) (List, error) {
 	for scanner.Scan() {
 		tok := scanner.Token()
 		switch tok.Type {
-		case Value:
+		case LineValue:
 			s.top().add(Node{Value: tok.Content, Annotations: a})
+			a = nil
+		case Reference:
+			s.top().add(Node{Value: tok.Content, IsReference: true, Annotations: a})
 			a = nil
 		case Annotation:
 			a = append(a, tok.Content)

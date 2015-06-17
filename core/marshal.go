@@ -37,6 +37,9 @@ func (n *Node) marshal(w *errWriter, prefix, indent string) {
 	}
 	if n.Value != "" {
 		w.writeString(prefix)
+		if n.IsReference {
+			w.writeByte('^')
+		}
 		w.writeString(n.Value)
 	}
 	if len(n.List) > 0 {

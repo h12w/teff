@@ -17,7 +17,8 @@ type TokenType int
 const (
 	Invalid TokenType = iota
 	Annotation
-	Value
+	Reference
+	LineValue
 	Indent
 	Unindent
 	EOF
@@ -82,10 +83,13 @@ func (s *Scanner) scanLine() {
 	}
 	var line string
 	line, s.err = s.readLine()
-	if line[0] == '#' {
+	switch line[0] {
+	case '#':
 		s.pushTok(Token{Type: Annotation, Content: line[1:]})
-	} else {
-		s.pushTok(Token{Type: Value, Content: line})
+	case '^':
+		s.pushTok(Token{Type: Reference, Content: line[1:]})
+	default:
+		s.pushTok(Token{Type: LineValue, Content: line})
 	}
 }
 

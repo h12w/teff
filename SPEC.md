@@ -10,14 +10,15 @@ International License. To view a copy of this license, visit
 Introduction
 ------------
 TEFF (TEst Friendly Format) is an extensible data format with testing purpose in
-mind. it is easy to read, compare and write manually.
+mind. It is friendly to read, write and compare, and can be extended to represent
+rich set of data types.
 
-In general, the [core format](#core) of TEFF represents a tree. Each node of the
-tree is an untyped string occupying a single line, and the relation between
-nodes are represented by indents.
-
-This model is simple and [extensible](#extensions). The minimal constraints make
-it easy to be extended to represent various data types and structures.
+In general, TEFF are organized into two layers, core and extensions. The
+[core](#core) of TEFF represents a tree with annotated nodes, which forms
+an extensible foundation with minimal constraints. The [extensions](#extensions)
+of TEFF define format of major data types and allow custom format of user
+defined types. The encodings of extensions are only contrained by the core, i.e.
+any two extensions may have the same representation without causing any confliction.
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
@@ -89,23 +90,11 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
    the stack is popped and an `unindent` token is emitted until the length of
    the stack becomes 1.
 
-### Grammer
+### Reference & type annotations
 
-    teff_file    ::= list EOF
-    list         ::= node*
-    node         ::= annotation* value (start list end)?
-
-Extensions
-----------
-In this section, format extensions for annotations and common types are specified.
-These definitions should cover all the builtin types and some of the important
-types in standard libraries.
-
-It is assumed that an external schema must be provided when interpreting the
-structures defined in the extensions, therefore, the representations of two
-extensions may have the same format without causing any conflictions.
-
-### Reference & type annotation
+Reference & type annotations are special extensions to the annotation token,
+they are described in the core section because extensions should not have
+conflictions with reference & type annotations.
 
     unicode_letter  ::= <a Unicode code point classified as "Letter">
     unicode_digit   ::= <a Unicode code point classified as "Decimal Digit">
@@ -142,6 +131,22 @@ TEFF can optionally represent type by type annotation.
 
 When both a cyclic reference and a type are defined for a node, it does not
 matter which comes first. Both annotates the next node.
+
+### Grammer
+
+    teff_file    ::= list EOF
+    list         ::= node*
+    node         ::= annotation* value (start list end)?
+
+Extensions
+----------
+In this section, format extensions for common types are specified. These
+definitions should cover all the builtin types and some of the important types
+in standard libraries.
+
+It is assumed that an external schema must be provided when interpreting the
+structures defined in the extensions, therefore, the representations of two
+extensions may have the same format without causing any conflictions.
 
 ### Array
 

@@ -11,6 +11,7 @@ TODO:
 1. mismatch type for struct field
 2. ignore setting unexported field
 3. reading unexported field
+4. type S []S
 */
 
 func TestModel(t *testing.T) {
@@ -88,19 +89,24 @@ func TestModel(t *testing.T) {
 		},
 		//{
 		//	func() struct {
-		//		I1 int
-		//		I2 *int
+		//		S3 ***string
+		//		S2 **string
+		//		S1 *string
 		//	} {
-		//		s := struct {
-		//			I1 int
-		//			I2 *int
-		//		}{3, nil}
-		//		s.I2 = &s.I1
-		//		return s
+		//		s := "a"
+		//		ps := &s
+		//		pps := &ps
+		//		ppps := &pps
+		//		v := struct {
+		//			S3 ***string
+		//			S2 **string
+		//			S1 *string
+		//		}{ppps, pps, ps}
+		//		return v
 		//	}(),
 		//	List{
-		//		{RefID: "1", Value: IdentValue{"I1", 3}},
-		//		{Value: IdentValue{"I2", RefID("1")}},
+		//		{RefID: "1", Value: IdentValue{"S1", "a"}},
+		//		{Value: IdentValue{"S2", RefID("1")}},
 		//	},
 		//},
 	} {

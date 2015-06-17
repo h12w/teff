@@ -84,6 +84,7 @@ func (f *filler) sliceFromList(l List, v reflect.Value) error {
 }
 
 func (m *maker) listFromStruct(v reflect.Value) (List, error) {
+	t := v.Type()
 	l := make(List, v.NumField())
 	for i := 0; i < v.NumField(); i++ {
 		node, err := m.node(v.Field(i))
@@ -91,7 +92,7 @@ func (m *maker) listFromStruct(v reflect.Value) (List, error) {
 			return nil, err
 		}
 		if node.List == nil {
-			node.Value = IdentValue{Identifier(v.Type().Field(i).Name), node.Value}
+			node.Value = IdentValue{Identifier(t.Field(i).Name), node.Value}
 		}
 		l[i] = node
 	}
@@ -132,16 +133,7 @@ func (m *maker) node(v reflect.Value) (*Node, error) {
 func (f *filler) fromNode(n *Node, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		switch src := n.Value.(type) {
-		case IdentValue:
-			if refID, ok := src.Value.(RefID); ok {
-				_ = refID
-			} else {
-				v.Set(reflect.ValueOf(src.Value))
-			}
-		default:
-			v.Set(reflect.ValueOf(src))
-		}
+		v.Set(reflect.ValueOf(n.GetValue()))
 		return nil
 	case reflect.Slice:
 		return f.fromList(n.List, v)

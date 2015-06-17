@@ -90,11 +90,11 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
    the stack is popped and an `unindent` token is emitted until the length of
    the stack becomes 1.
 
-### Reference & type annotations
+### Reference annotation
 
-Reference & type annotations are special extensions to the annotation token,
-they are described in the core section because extensions should not have
-conflictions with reference & type annotations.
+Reference annotation is a special extension to the annotation token, it is
+described in the core section because the extensions should not have
+conflictions with reference annotation.
 
     unicode_letter  ::= <a Unicode code point classified as "Letter">
     unicode_digit   ::= <a Unicode code point classified as "Decimal Digit">
@@ -119,6 +119,20 @@ can be referenced multiple times by `reference`s.
     -----               --------------------------
     value           ::= char_visible+ char_inline*
 
+### Grammer
+
+    teff_file    ::= list EOF
+    list         ::= node*
+    node         ::= annotation* value (start list end)?
+
+Extensions
+----------
+In this section, format extensions for annotations & common data types are
+specified. These definitions should cover all the builtin types and some of the
+important types in standard libraries.
+
+### Type annotation
+
 TEFF can optionally represent type by type annotation.
 
     type_label      ::= "<" letter_digit+ ">"
@@ -128,25 +142,6 @@ TEFF can optionally represent type by type annotation.
         ↓                ↓       ↓
     ----------          --- ------------
     annotation      ::= "#" char_inline*
-
-When both a cyclic reference and a type are defined for a node, it does not
-matter which comes first. Both annotates the next node.
-
-### Grammer
-
-    teff_file    ::= list EOF
-    list         ::= node*
-    node         ::= annotation* value (start list end)?
-
-Extensions
-----------
-In this section, format extensions for common types are specified. These
-definitions should cover all the builtin types and some of the important types
-in standard libraries.
-
-It is assumed that an external schema must be provided when interpreting the
-structures defined in the extensions, therefore, the representations of two
-extensions may have the same format without causing any conflictions.
 
 ### Array
 

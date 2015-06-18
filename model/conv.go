@@ -134,7 +134,7 @@ func (m *maker) node(v reflect.Value) (*Node, error) {
 func (f *filler) fromNode(n *Node, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		v.Set(reflect.ValueOf(n.GetValue()))
+		v.Set(reflect.ValueOf(n.Value))
 		return nil
 	case reflect.Slice:
 		return f.fromList(n.List, v)

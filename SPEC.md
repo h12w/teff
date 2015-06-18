@@ -1,11 +1,10 @@
 Test Friendly Format (TEFF)
 ===========================
 
-Copyright (c) 2014-2015, Hǎiliàng Wáng. All rights reserved.
+Copyright © 2014-2015 Hǎiliàng Wáng.
 
-This specification is licensed under the Creative Commons Attribution 4.0
-International License. To view a copy of this license, visit
-    http://creativecommons.org/licenses/by/4.0/
+This specification is licensed under the [Creative Commons Attribution 4.0
+International License](http://creativecommons.org/licenses/by/4.0/).
 
 Introduction
 ------------
@@ -22,10 +21,6 @@ any two extensions may have the same representation without causing any conflict
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
 (OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
-The major difference between TEFF and OGDL is that TEFF core disallow mutiple
-values occupying a single line (unless a custom encoding is defined). This
-constraint simplifies the parser, opens more possibilities for extensions and
-makes it clearer to compare two files line by line.
 
 Notation
 --------
@@ -177,16 +172,8 @@ a node.
     ----          -----
     list      ::= node*
 
-When the value of a key-value pair can be encoded as a single `value`, the
-key and the value together are encoded as a single `value`:
-
-    key_value ::= map_key ":" spaces? map_value
-    ---------     -----------------------------
-     ↓              ↓
-    ----          -----
-    node      ::= value
-
-When the value of a key-value pair has to be encoded as a `list`:
+The key in a key-value pair is encoded a `value` suffixed by a comma, and the
+value in a key-value pair is encoded as a `list`.
 
     key_value ::= map_key ":" start map_value end
     ---------     ----------- ----- --------- ---
@@ -210,8 +197,8 @@ The special `value` nil is used to represent an uninitialized nullable node.
     nil   ::= "nil"
     ---       -----
      ↓          ↓
-    -----     --------------------------
-    value ::= char_visible+ char_inline*
+    -----     ----------------------
+    value ::= reference | line_value
 
 ### String
 A string is represented as either a `raw_string` or an `interpreted_string` (double
@@ -219,9 +206,9 @@ quoted).
 
     string             ::= raw_string | interpreted_string
     ------                 -------------------------------
-      ↓                                 ↓
-    -----                  --------------------------
-    value              ::= char_visible+ char_inline*
+      ↓                               ↓
+    -----                  ----------------------
+    value              ::= reference | line_value
 
 A `raw_string` is the same as a `value` as long as it does not start with `#`.
 
@@ -234,8 +221,8 @@ An `interpreted_string` can contain any Unicode code points by escape sequences.
     interpreted_string ::= '"' quoted_char* '"'
     ------------------     --------------------
       ↓                             ↓
-    -----                  --------------------------
-    value              ::= char_visible+ char_inline*
+    -----                  ----------------------
+    value              ::= reference | line_value
 
 #### Escape sequences
 
@@ -262,8 +249,8 @@ Boolean value is a `value` of either true of false.
     boolean ::= "true" | "false"
     -------     ----------------
       ↓                ↓
-    -----       --------------------------
-    value   ::= char_visible+ char_inline*
+    -----       ----------------------
+    value   ::= reference | line_value
 
 ### Numeric value
 Numeric value is a `value` that encode a number.
@@ -275,8 +262,8 @@ Numeric value is a `value` that encode a number.
     integer    ::= sign? decimals
     -------        --------------
        ↓                 ↓
-    -------        --------------------------
-    value      ::= char_visible+ char_inline*
+    -----          ----------------------
+    value      ::= reference | line_value
 
 #### Float
 Float value is a `value` that encode a floating point number:
@@ -289,8 +276,8 @@ Float value is a `value` that encode a floating point number:
     float      ::= sign? float_base
     -----          ----------------
       ↓                   ↓
-    -----          --------------------------
-    value      ::= char_visible+ char_inline*
+    -----          ----------------------
+    value      ::= reference | line_value
 
 #### Complex
     int_float  ::= decimals | float_base
@@ -298,8 +285,8 @@ Float value is a `value` that encode a floating point number:
     complex    ::= sign? int_float sign int_float "i"
     -------        ----------------------------------
       ↓                        ↓
-    -----          --------------------------
-    value      ::= char_visible+ char_inline*
+    -----          ----------------------
+    value      ::= reference | line_value
 
 ### Date/time (TODO: use a shorter representation)
 A date/time value is an `value` encoded with
@@ -308,8 +295,8 @@ A date/time value is an `value` encoded with
     date_time ::= rfc3339_date_time
     ---------     -----------------
       ↓                   ↓
-    -----         --------------------------
-    value     ::= char_visible+ char_inline*
+    -----         ----------------------
+    value     ::= reference | line_value
 
 e.g.
 
@@ -338,8 +325,8 @@ An IPv6 address value is an `value` encoded with
     ipv6  ::= rfc5952_ipv6_address
     ----      --------------------
      ↓                 ↓
-    -----     --------------------------
-    value ::= char_visible+ char_inline*
+    -----     ----------------------
+    value ::= reference | line_value
 
 e.g.
 

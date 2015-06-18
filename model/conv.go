@@ -174,18 +174,7 @@ func (f *filler) fromNode(n *Node, v reflect.Value) (err error) {
 					if reflect.PtrTo(ref.Type()) == v.Type() {
 						v.Set(ref.Addr())
 					} else {
-						//for i := 0; i < 10; i++ {
-						//	if ref.CanAddr() {
-						//		ref = ref.Addr()
-						//	} else {
-						//		nref := reflect.New(reflect.PtrTo(ref.Type()))
-						//		nref.Set(ref)
-						//		ref = nref
-						//	}
-						//	if ref.Type() == v.Type() {
-						//		v.Set(ref)
-						//	}
-						//}
+						reflect.Indirect(alloc(v)).Set(ref.Addr())
 					}
 				}
 			}
@@ -267,9 +256,14 @@ func addresses(v reflect.Value) (addrs []uintptr) {
 func allocIndirect(v reflect.Value) reflect.Value {
 	for v.Type().Kind() == reflect.Ptr {
 		if v.IsNil() {
-			v.Set(reflect.New(v.Type().Elem()))
+			alloc(v)
 		}
 		v = reflect.Indirect(v)
 	}
+	return v
+}
+
+func alloc(v reflect.Value) reflect.Value {
+	v.Set(reflect.New(v.Type().Elem()))
 	return v
 }

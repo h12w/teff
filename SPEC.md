@@ -20,7 +20,8 @@ defined types. The encodings of extensions are only contrained by the core, i.e.
 any two extensions may have the same representation without causing any confliction.
 
 This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
-(OGDL was invented by Rolf Veen, and we cooperated in writing its 2.0 spec).
+([OGDL](http://ogdl.org/) was invented by Rolf Veen, and we cooperated in
+writing its 2.0 spec).
 
 Notation
 --------

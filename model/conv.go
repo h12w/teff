@@ -130,10 +130,11 @@ func (m *maker) node(v reflect.Value) (n *Node, err error) {
 			return &Node{}, nil // avoid infinite loop
 		}
 		addr := v.Pointer()
-		if refID, ok := m.refID(addr); ok {
-			return &Node{Value: refID}, nil
+		if refNode, ok := m.find(addr); ok {
+			n = &Node{Value: refNode.RefID}
+		} else {
+			n, err = m.node(indirect(v))
 		}
-		n, err = m.node(indirect(v))
 	default:
 		err = errors.New("node: unsupported type")
 	}
@@ -202,15 +203,15 @@ func (f *filler) register(refID RefID, v reflect.Value) {
 	f.m[refID] = v
 }
 
-func (m *maker) refID(addr uintptr) (RefID, bool) {
+func (m *maker) find(addr uintptr) (*Node, bool) {
 	if node, ok := m.m[addr]; ok {
 		if node.RefID == "" {
 			node.RefID = RefID(strconv.Itoa(m.serial))
 			m.serial++
 		}
-		return node.RefID, true
+		return node, true
 	}
-	return RefID(0), false
+	return nil, false
 }
 
 func (f *filler) value(refID RefID) reflect.Value {

@@ -91,17 +91,21 @@ func TestModel(t *testing.T) {
 			func() *struct { // return pointer so that S1 is addressable and can be correctly referenced.
 				S1 string
 				S2 *string
+				//S3 **string
 			} {
 				s := struct {
 					S1 string
 					S2 *string
-				}{"a", nil}
+					//S3 **string
+				}{S1: "a"}
 				s.S2 = &s.S1
+				//s.S3 = &s.S2
 				return &s
 			}(),
 			List{
 				{Value: Identifier("S1"), List: List{{RefID: "1", Value: "a"}}},
 				{Value: Identifier("S2"), List: List{{Value: RefID("1")}}},
+				//{Value: Identifier("S3"), List: List{{Value: RefID("1")}}},
 			},
 		},
 

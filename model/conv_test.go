@@ -67,26 +67,26 @@ func TestModel(t *testing.T) {
 				S string
 			}{1, "a"},
 			List{
-				{Value: IdentValue{"I", 1}},
-				{Value: IdentValue{"S", "a"}},
+				{Value: Identifier("I"), List: List{{Value: 1}}},
+				{Value: Identifier("S"), List: List{{Value: "a"}}},
 			},
 		},
-		{
-			func() struct {
-				I1 *int
-				I2 *int
-			} {
-				i := 3
-				return struct {
-					I1 *int
-					I2 *int
-				}{&i, &i}
-			}(),
-			List{
-				{RefID: "1", Value: IdentValue{"I1", 3}},
-				{Value: IdentValue{"I2", RefID("1")}},
-			},
-		},
+		//{
+		//	func() struct {
+		//		I1 *int
+		//		I2 *int
+		//	} {
+		//		i := 3
+		//		return struct {
+		//			I1 *int
+		//			I2 *int
+		//		}{&i, &i}
+		//	}(),
+		//	List{
+		//		{RefID: "1", Value: IdentValue{"I1", 3}},
+		//		{Value: IdentValue{"I2", RefID("1")}},
+		//	},
+		//},
 		//{
 		//	func() struct {
 		//		S3 ***string

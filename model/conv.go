@@ -93,20 +93,19 @@ func (m *maker) listFromStruct(v reflect.Value) (List, error) {
 		if err != nil {
 			return nil, err
 		}
-		if node.List == nil {
-			node.Value = IdentValue{Identifier(t.Field(i).Name), node.Value}
-		}
-		l[i] = node
+		l[i] = &Node{Value: Identifier(t.Field(i).Name), List: List{node}}
 	}
 	return l, nil
 }
 
 func (f *filler) structFromList(l List, v reflect.Value) error {
 	for _, n := range l {
-		if iv, ok := n.Value.(IdentValue); ok {
-			if field := v.FieldByName(string(iv.Ident)); field.IsValid() {
-				if err := f.fromNode(n, field); err != nil {
-					return err
+		if fieldName, ok := n.Value.(Identifier); ok {
+			if field := v.FieldByName(string(fieldName)); field.IsValid() {
+				if len(n.List) > 0 {
+					if err := f.fromNode(n.List[0], field); err != nil {
+						return err
+					}
 				}
 			}
 		}

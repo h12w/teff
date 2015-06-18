@@ -113,61 +113,63 @@ func (f *filler) structFromList(l List, v reflect.Value) error {
 	return nil
 }
 
-func (m *maker) node(v reflect.Value) (*Node, error) {
+func (m *maker) node(v reflect.Value) (n *Node, err error) {
 	switch v.Type().Kind() {
 	case reflect.Int:
-		return &Node{Value: int(v.Int())}, nil
+		n = &Node{Value: int(v.Int())}
 	case reflect.String:
-		return &Node{Value: v.String()}, nil
+		n = &Node{Value: v.String()}
 	case reflect.Slice:
 		list, err := m.list(v)
 		if err != nil {
 			return nil, err
 		}
-		return &Node{List: list}, nil
+		n = &Node{List: list}
 	case reflect.Ptr:
-		return m.nodeFromPtr(v)
+		if v.IsNil() {
+			return &Node{}, nil // avoid infinite loop
+		}
+		addr := v.Pointer()
+		if refID, ok := m.refID(addr); ok {
+			return &Node{Value: refID}, nil
+		}
+		n, err = m.node(indirect(v))
+	default:
+		err = errors.New("node: unsupported type")
 	}
-	return nil, errors.New("node: unsupported type")
+	if n != nil {
+		for _, addr := range addresses(v) {
+			m.register(addr, n)
+		}
+	}
+	return
 }
 
-func (f *filler) fromNode(n *Node, v reflect.Value) error {
+func (f *filler) fromNode(n *Node, v reflect.Value) (err error) {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
 		v.Set(reflect.ValueOf(n.Value))
-		return nil
 	case reflect.Slice:
-		return f.fromList(n.List, v)
+		err = f.fromList(n.List, v)
 	case reflect.Ptr:
-		return f.ptrFromNode(n, v)
+		if refID, ok := n.Reference(); ok {
+			if ref := f.value(refID); ref.IsValid() {
+				if ref.Type() == v.Type() {
+					v.Set(ref)
+				} else if reflect.PtrTo(ref.Type()) == v.Type() {
+					v.Set(ref.Addr())
+				}
+			}
+		} else {
+			err = f.fromNode(n, allocIndirect(v))
+		}
+	default:
+		err = errors.New("Node.fill: unsupported type")
 	}
-	return errors.New("Node.fill: unsupported type")
-}
-
-func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
-	if v.IsNil() {
-		return &Node{}, nil // avoid infinite loop
-	}
-	addr := v.Pointer()
-	if refID, ok := m.refID(addr); ok {
-		return &Node{Value: refID}, nil
-	}
-	node, err := m.node(indirect(v))
-	if err != nil {
-		return nil, err
-	}
-	m.register(addr, node)
-	return node, nil
-}
-
-func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
-	if n.RefID != "" {
+	if err == nil && n.RefID != "" {
 		f.register(n.RefID, v)
-	} else if refID, ok := n.Reference(); ok {
-		v.Set(f.value(refID))
-		return nil
 	}
-	return f.fromNode(n, allocIndirect(v))
+	return
 }
 
 // maker makes a new List
@@ -220,6 +222,17 @@ func indirect(v reflect.Value) reflect.Value {
 		v = reflect.Indirect(v)
 	}
 	return v
+}
+
+func addresses(v reflect.Value) (addrs []uintptr) {
+	if v.CanAddr() {
+		v = v.Addr()
+	}
+	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
+		addrs = append(addrs, v.Pointer())
+		v = reflect.Indirect(v)
+	}
+	return
 }
 
 func allocIndirect(v reflect.Value) reflect.Value {

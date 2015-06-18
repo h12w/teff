@@ -87,6 +87,24 @@ func TestModel(t *testing.T) {
 				{Value: Identifier("S2"), List: List{{Value: RefID("1")}}},
 			},
 		},
+		{
+			func() *struct { // return pointer so that S1 is addressable and can be correctly referenced.
+				S1 string
+				S2 *string
+			} {
+				s := struct {
+					S1 string
+					S2 *string
+				}{"a", nil}
+				s.S2 = &s.S1
+				return &s
+			}(),
+			List{
+				{Value: Identifier("S1"), List: List{{RefID: "1", Value: "a"}}},
+				{Value: Identifier("S2"), List: List{{Value: RefID("1")}}},
+			},
+		},
+
 		//{
 		//	func() struct {
 		//		S3 ***string

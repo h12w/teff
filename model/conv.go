@@ -28,7 +28,7 @@ func Fill(l List, v interface{}) error {
 
 func (m *maker) list(v reflect.Value) (List, error) {
 	if v.Type().Kind() == reflect.Ptr {
-		v = indirect(v)
+		v = leaf(v)
 	}
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
@@ -47,7 +47,7 @@ func (m *maker) list(v reflect.Value) (List, error) {
 
 func (f *filler) fromList(l List, v reflect.Value) error {
 	if v.Type().Kind() == reflect.Ptr {
-		v = allocIndirect(v)
+		v = allocLeaf(v)
 	}
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
@@ -100,13 +100,13 @@ func (m *maker) listFromStruct(v reflect.Value) (List, error) {
 
 func (f *filler) structFromList(l List, v reflect.Value) error {
 	for _, n := range l {
+		if len(n.List) == 0 {
+			continue
+		}
 		if fieldName, ok := n.Value.(Identifier); ok {
-			if field := v.FieldByName(string(fieldName)); field.IsValid() {
-				if len(n.List) > 0 {
-					if err := f.fromNode(n.List[0], field); err != nil {
-						return err
-					}
-				}
+			field := v.FieldByName(string(fieldName))
+			if err := f.fromNode(n.List[0], field); err != nil {
+				return err
 			}
 		}
 	}
@@ -126,28 +126,7 @@ func (m *maker) node(v reflect.Value) (n *Node, err error) {
 		}
 		n = &Node{List: list}
 	case reflect.Ptr:
-		if v.IsNil() {
-			return &Node{}, nil // avoid infinite loop
-		}
-		found := false
-		for {
-			addr := v.Pointer()
-			if refNode, ok := m.find(addr); ok {
-				n = &Node{Value: refNode.RefID}
-				found = true
-				break
-			}
-
-			if !v.IsNil() {
-				v = reflect.Indirect(v)
-			}
-			if v.Type().Kind() != reflect.Ptr || v.IsNil() {
-				break
-			}
-		}
-		if !found {
-			n, err = m.node(indirect(v))
-		}
+		n, err = m.nodeFromPtr(v)
 	default:
 		err = errors.New("node: unsupported type")
 	}
@@ -166,21 +145,7 @@ func (f *filler) fromNode(n *Node, v reflect.Value) (err error) {
 	case reflect.Slice:
 		err = f.fromList(n.List, v)
 	case reflect.Ptr:
-		if refID, ok := n.Reference(); ok {
-			if ref := f.value(refID); ref.IsValid() {
-				if ref.Type() == v.Type() {
-					v.Set(ref)
-				} else {
-					if reflect.PtrTo(ref.Type()) == v.Type() {
-						v.Set(ref.Addr())
-					} else {
-						reflect.Indirect(alloc(v)).Set(ref.Addr())
-					}
-				}
-			}
-		} else {
-			err = f.fromNode(n, allocIndirect(v))
-		}
+		err = f.ptrFromNode(n, v)
 	default:
 		err = errors.New("Node.fill: unsupported type")
 	}
@@ -188,6 +153,34 @@ func (f *filler) fromNode(n *Node, v reflect.Value) (err error) {
 		f.register(n.RefID, v)
 	}
 	return
+}
+
+func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
+	if v.IsNil() {
+		return &Node{}, nil // avoid infinite loop
+	}
+	for v.Type().Kind() == reflect.Ptr {
+		if refNode, ok := m.find(v.Pointer()); ok {
+			return &Node{Value: refNode.RefID}, nil
+		}
+		v = reflect.Indirect(v)
+	}
+	return m.node(leaf(v))
+}
+
+func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
+	if refID, ok := n.Value.(RefID); ok {
+		ref := f.value(refID)
+		if ref.Type() != v.Type() {
+			ref = ref.Addr()
+			for v.Type() != ref.Type() {
+				v = allocIndirect(v)
+			}
+		}
+		v.Set(ref)
+		return nil
+	}
+	return f.fromNode(n, allocLeaf(v))
 }
 
 // maker makes a new List
@@ -235,7 +228,7 @@ func (f *filler) value(refID RefID) reflect.Value {
 	return f.m[refID]
 }
 
-func indirect(v reflect.Value) reflect.Value {
+func leaf(v reflect.Value) reflect.Value {
 	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
 		v = reflect.Indirect(v)
 	}
@@ -253,17 +246,16 @@ func addresses(v reflect.Value) (addrs []uintptr) {
 	return
 }
 
-func allocIndirect(v reflect.Value) reflect.Value {
+func allocLeaf(v reflect.Value) reflect.Value {
 	for v.Type().Kind() == reflect.Ptr {
-		if v.IsNil() {
-			alloc(v)
-		}
-		v = reflect.Indirect(v)
+		v = allocIndirect(v)
 	}
 	return v
 }
 
-func alloc(v reflect.Value) reflect.Value {
-	v.Set(reflect.New(v.Type().Elem()))
-	return v
+func allocIndirect(v reflect.Value) reflect.Value {
+	if v.IsNil() {
+		v.Set(reflect.New(v.Type().Elem()))
+	}
+	return reflect.Indirect(v)
 }

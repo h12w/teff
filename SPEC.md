@@ -15,7 +15,7 @@ rich set of data types.
 In general, TEFF are organized into two layers, core and extensions. The
 [core](#core) of TEFF represents a tree with annotated nodes, which forms
 an extensible foundation with minimal constraints. The [extensions](#extensions)
-of TEFF define format of major data types and allow custom format of user
+of TEFF define encodings of major data types and allow custom encoding of user
 defined types. The encodings of extensions are only contrained by the core, i.e.
 any two extensions may have the same representation without causing any confliction.
 
@@ -99,9 +99,9 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
 
 Extensions
 ----------
-In this section, format extensions for annotations & common data types are
-specified. These definitions should cover all the builtin types and some of the
-important types in standard libraries.
+In this section, extensions for annotations & common data types are specified.
+These definitions should cover almost all builtin types and some of the
+important types in the standard libraries.
 
 ### Type & reference annotations
 
@@ -173,7 +173,7 @@ a node.
     ----          -----
     list      ::= node*
 
-The key in a key-value pair is encoded a `value` suffixed by a comma, and the
+The key in a key-value pair is encoded a `value` suffixed by a `:`, and the
 value in a key-value pair is encoded as a `list`.
 
     key_value ::= map_key ":" start map_value end
@@ -188,8 +188,8 @@ Encoding of `map_key`:
 * string: refer to [`interpreted_string`](#string)
 * boolean: refer to [`boolean`](#boolean-value)
 * numeric: refer to [`numeric`](#numeric-value)
-* others: implementation specific, as long as the ending of the encoding is
-  recognized without relying on the `:`.
+* others: implementation specific, as long as the encoding satisfies `value` and
+the ending of the encoding is recognized without relying on the `:`.
 
 ### Nil
 

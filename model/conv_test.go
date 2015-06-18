@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -87,25 +88,81 @@ func TestModel(t *testing.T) {
 				{Value: Identifier("S2"), List: List{{Value: RefID("1")}}},
 			},
 		},
+
 		{
 			func() *struct { // return pointer so that S1 is addressable and can be correctly referenced.
 				S1 string
 				S2 *string
-				//S3 **string
+				S3 **string
+				S4 ***string
 			} {
 				s := struct {
 					S1 string
 					S2 *string
-					//S3 **string
+					S3 **string
+					S4 ***string
 				}{S1: "a"}
 				s.S2 = &s.S1
-				//s.S3 = &s.S2
+				s.S3 = &s.S2
+				s.S4 = &s.S3
+				return &s
+			}(),
+			List{
+				// RefID should imitate exactly like the original pointer so the data topology can be reconstructed
+				{Value: Identifier("S1"), List: List{{RefID: "1", Value: "a"}}},
+				{Value: Identifier("S2"), List: List{{RefID: "2", Value: RefID("1")}}},
+				{Value: Identifier("S3"), List: List{{RefID: "3", Value: RefID("2")}}},
+				{Value: Identifier("S4"), List: List{{Value: RefID("3")}}},
+			},
+		},
+
+		{
+			func() *struct {
+				S1 string
+				S2 *string
+				S3 **string
+				S4 ***string
+			} {
+				s := struct {
+					S1 string
+					S2 *string
+					S3 **string
+					S4 ***string
+				}{S1: "a"}
+				b := "b"
+				s.S2 = &b
+				s.S3 = &s.S2
+				s.S4 = &s.S3
+				return &s
+			}(),
+			List{
+				{Value: Identifier("S1"), List: List{{Value: "a"}}},
+				{Value: Identifier("S2"), List: List{{RefID: "1", Value: "b"}}},
+				{Value: Identifier("S3"), List: List{{RefID: "2", Value: RefID("1")}}},
+				{Value: Identifier("S4"), List: List{{Value: RefID("2")}}},
+			},
+		},
+
+		{
+			func() *struct {
+				S1 string
+				S3 **string
+				S4 ***string
+			} {
+				s := struct {
+					S1 string
+					S3 **string
+					S4 ***string
+				}{S1: "a"}
+				s2 := &s.S1
+				s.S3 = &s2
+				s.S4 = &s.S3
 				return &s
 			}(),
 			List{
 				{Value: Identifier("S1"), List: List{{RefID: "1", Value: "a"}}},
-				{Value: Identifier("S2"), List: List{{Value: RefID("1")}}},
-				//{Value: Identifier("S3"), List: List{{Value: RefID("1")}}},
+				{Value: Identifier("S3"), List: List{{RefID: "2", Value: RefID("1")}}},
+				{Value: Identifier("S4"), List: List{{Value: RefID("2")}}},
 			},
 		},
 
@@ -141,7 +198,7 @@ func TestModel(t *testing.T) {
 				t.Fatalf("testcase %d: New: %v", i, err)
 			}
 			if !reflect.DeepEqual(list, testcase.l) {
-				t.Fatalf("testcase %d: New: mismatch, expect \n%v\ngot\n%v", i, testcase.l, list)
+				t.Fatalf("testcase %d: New: mismatch, expect \n%v\ngot\n%v", i, testcase.l.String(), list.String())
 			}
 		}
 		{
@@ -154,7 +211,7 @@ func TestModel(t *testing.T) {
 				t.Fatalf("testcase %d: New: %v", i, err)
 			}
 			if !reflect.DeepEqual(list, testcase.l) {
-				t.Fatalf("testcase %d: Fill: mismatch, expect \n%v\ngot\n%v", i, testcase.l, list)
+				t.Fatalf("testcase %d: Fill: mismatch, expect \n%v\ngot\n%v", i, testcase.l.String(), list.String())
 			}
 		}
 	}
@@ -178,5 +235,24 @@ func ps(s string) *string {
 }
 
 func (n *Node) String() string {
-	return fmt.Sprintf("%#v", *n)
+	ref := string(n.RefID)
+	if ref != "" {
+		ref = "^" + ref
+	}
+	switch len(n.List) {
+	case 0:
+		return fmt.Sprintf("%v%s", n.Value, ref)
+	case 1:
+		return fmt.Sprintf("%v%s: %s", n.Value, ref, n.List[0].String())
+	default:
+		return fmt.Sprintf("%v%s: %s", n.Value, ref, n.List.String())
+	}
+}
+
+func (l *List) String() string {
+	ss := make([]string, len(*l))
+	for i := range ss {
+		ss[i] = (*l)[i].String()
+	}
+	return "{" + strings.Join(ss, ", ") + "}"
 }

@@ -1,6 +1,6 @@
 /*
 Package model converts almost any Go data structures into a tree model:
-1. cyclic references are replaced with RefIDs
+1. references are replaced with RefIDs
 2. pointer & interfaces are replaced with values
 3. reflections are hidden from outside if possible
 */
@@ -129,25 +129,31 @@ func (m *maker) node(v reflect.Value) (n *Node, err error) {
 		if v.IsNil() {
 			return &Node{}, nil // avoid infinite loop
 		}
-		addr := v.Pointer()
-		if refNode, ok := m.find(addr); ok {
-			n = &Node{Value: refNode.RefID}
-		} else {
+		found := false
+		for {
+			addr := v.Pointer()
+			if refNode, ok := m.find(addr); ok {
+				n = &Node{Value: refNode.RefID}
+				found = true
+				break
+			}
+
+			if !v.IsNil() {
+				v = reflect.Indirect(v)
+			}
+			if v.Type().Kind() != reflect.Ptr || v.IsNil() {
+				break
+			}
+		}
+		if !found {
 			n, err = m.node(indirect(v))
 		}
 	default:
 		err = errors.New("node: unsupported type")
 	}
 	if n != nil {
-		addrs := addresses(v)
-		node := n
-		if len(addrs) > 0 {
-			if n, ok := m.m[addrs[len(addrs)-1]]; ok {
-				node = n // trace the leaf node
-			}
-		}
-		for _, addr := range addrs {
-			m.register(addr, node)
+		for _, addr := range addresses(v) {
+			m.register(addr, n)
 		}
 	}
 	return
@@ -164,8 +170,23 @@ func (f *filler) fromNode(n *Node, v reflect.Value) (err error) {
 			if ref := f.value(refID); ref.IsValid() {
 				if ref.Type() == v.Type() {
 					v.Set(ref)
-				} else if reflect.PtrTo(ref.Type()) == v.Type() {
-					v.Set(ref.Addr())
+				} else {
+					if reflect.PtrTo(ref.Type()) == v.Type() {
+						v.Set(ref.Addr())
+					} else {
+						//for i := 0; i < 10; i++ {
+						//	if ref.CanAddr() {
+						//		ref = ref.Addr()
+						//	} else {
+						//		nref := reflect.New(reflect.PtrTo(ref.Type()))
+						//		nref.Set(ref)
+						//		ref = nref
+						//	}
+						//	if ref.Type() == v.Type() {
+						//		v.Set(ref)
+						//	}
+						//}
+					}
 				}
 			}
 		} else {

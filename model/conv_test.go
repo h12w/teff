@@ -148,50 +148,46 @@ func TestModel(t *testing.T) {
 				S1 string
 				S3 **string
 				S4 ***string
+				S5 ****string
 			} {
 				s := struct {
 					S1 string
 					S3 **string
 					S4 ***string
+					S5 ****string
 				}{S1: "a"}
 				s2 := &s.S1
 				s.S3 = &s2
 				s.S4 = &s.S3
+				s.S5 = &s.S4
 				return &s
 			}(),
 			List{
 				{Value: Identifier("S1"), List: List{{RefID: "1", Value: "a"}}},
 				{Value: Identifier("S3"), List: List{{RefID: "2", Value: RefID("1")}}},
-				{Value: Identifier("S4"), List: List{{Value: RefID("2")}}},
+				{Value: Identifier("S4"), List: List{{RefID: "3", Value: RefID("2")}}},
+				{Value: Identifier("S5"), List: List{{Value: RefID("3")}}},
 			},
 		},
 
 		//{
-		//	func() struct {
-		//		S3 ***string
-		//		S2 **string
-		//		S1 *string
+		//	func() *struct { // reverse reference
+		//		S2 *string
+		//		S1 string
 		//	} {
-		//		s := "a"
-		//		ps := &s
-		//		pps := &ps
-		//		ppps := &pps
-		//		v := struct {
-		//			S3 ***string
-		//			S2 **string
-		//			S1 *string
-		//		}{ppps, pps, ps}
-		//		return v
+		//		s := struct {
+		//			S2 *string
+		//			S1 string
+		//		}{S1: "a"}
+		//		s.S2 = &s.S1
+		//		return &s
 		//	}(),
 		//	List{
-		//		{RefID: "1", Value: IdentValue{"S1", "a"}},
-		//		{Value: IdentValue{"S2", RefID("1")}},
+		//		{Value: Identifier("S2"), List: List{{Value: RefID("1")}}},
+		//		{Value: Identifier("S1"), List: List{{RefID: "1", Value: "a"}}},
 		//	},
 		//},
 	} {
-		//if i != 14 {
-		//	continue
-		//}
 		{
 			list, err := New(testcase.v)
 			if err != nil {

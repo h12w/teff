@@ -139,8 +139,15 @@ func (m *maker) node(v reflect.Value) (n *Node, err error) {
 		err = errors.New("node: unsupported type")
 	}
 	if n != nil {
-		for _, addr := range addresses(v) {
-			m.register(addr, n)
+		addrs := addresses(v)
+		node := n
+		if len(addrs) > 0 {
+			if n, ok := m.m[addrs[len(addrs)-1]]; ok {
+				node = n // trace the leaf node
+			}
+		}
+		for _, addr := range addrs {
+			m.register(addr, node)
 		}
 	}
 	return

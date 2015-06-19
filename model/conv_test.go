@@ -204,7 +204,7 @@ func TestModel(t *testing.T) {
 		}
 		{
 			v := newValueOf(testcase.v)
-			if err := Fill(testcase.l, v); err != nil {
+			if err := testcase.l.Fill(v); err != nil {
 				t.Fatalf("testcase %d: Fill: %v", i, err)
 			}
 			list, err := New(v)
@@ -242,11 +242,11 @@ func (n *Node) String() string {
 	}
 	switch len(n.List) {
 	case 0:
-		return fmt.Sprintf("%v%s(%v)", n.Value, ref, reflect.TypeOf(n.Value))
+		return fmt.Sprintf("%v%s(%v)", n.Value, ref, reflect.TypeOf(n.Value).Name())
 	case 1:
-		return fmt.Sprintf("%v%s(%v): %s", n.Value, ref, reflect.TypeOf(n.Value), n.List[0].String())
+		return fmt.Sprintf("%v%s(%v): %s", n.Value, ref, reflect.TypeOf(n.Value).Name(), n.List[0].String())
 	default:
-		return fmt.Sprintf("%v%s(%v): %s", n.Value, ref, reflect.TypeOf(n.Value), n.List.String())
+		return fmt.Sprintf("%v%s(%v): %s", n.Value, ref, reflect.TypeOf(n.Value).Name(), n.List.String())
 	}
 }
 

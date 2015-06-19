@@ -17,6 +17,7 @@ type nodeCounter struct {
 }
 
 // filler fills from a list
+// TODO: fill lazily
 type filler struct {
 	m map[RefID]reflect.Value
 }
@@ -32,12 +33,19 @@ func newMaker() *maker {
 	}
 }
 
-func (m *maker) register(p uintptr, node *Node) {
-	m.m[p] = node
+func (m *maker) register(v reflect.Value, node *Node) {
+	if node == nil {
+		return
+	}
+	for _, p := range addresses(v) {
+		m.m[p] = node
+	}
 }
 
 func (f *filler) register(refID RefID, v reflect.Value) {
-	f.m[refID] = v
+	if refID != "" {
+		f.m[refID] = v
+	}
 }
 
 func (m *maker) find(addr uintptr) (*Node, bool) {
@@ -55,22 +63,21 @@ func (f *filler) value(refID RefID) reflect.Value {
 	return f.m[refID]
 }
 
-func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
-	n := &Node{}
+func (m *maker) ptrToNode(v reflect.Value, node *Node) error {
 	if v.IsNil() {
-		return n, nil // avoid infinite loop
+		return nil // avoid infinite loop
 	}
 	for v.Type().Kind() == reflect.Ptr {
 		if refNode, ok := m.find(v.Pointer()); ok {
-			n.Value = refNode.RefID
-			return n, nil
+			node.Value = refNode.RefID
+			return nil
 		}
 		v = reflect.Indirect(v)
 	}
-	return m.node(reflect.Indirect(v))
+	return m.objectToNode(v, node)
 }
 
-func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
+func (f *filler) nodeToPtr(n *Node, v reflect.Value) error {
 	if refID, ok := n.Value.(RefID); ok {
 		ref := f.value(refID)
 		if ref.Type() != v.Type() {
@@ -82,15 +89,15 @@ func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
 		v.Set(ref)
 		return nil
 	}
-	return f.fromNode(n, allocIndirect(v))
+	return f.nodeToObject(n, allocIndirect(v))
 }
 
-func (m *maker) listFromPtr(v reflect.Value) (List, error) {
-	return m.list(reflect.Indirect(v))
+func (m *maker) ptrToList(v reflect.Value) (List, error) {
+	return m.objectToList(reflect.Indirect(v))
 }
 
-func (f *filler) ptrFromList(l List, v reflect.Value) error {
-	return f.fromList(l, allocIndirect(v))
+func (f *filler) listToPtr(l List, v reflect.Value) error {
+	return f.listToObject(l, allocIndirect(v))
 }
 
 func addresses(v reflect.Value) (addrs []uintptr) {

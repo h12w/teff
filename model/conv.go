@@ -121,11 +121,7 @@ func (m *maker) objectToNode(v reflect.Value, n *Node) (err error) {
 	case reflect.String:
 		n.Value = v.String()
 	case reflect.Slice:
-		list, err := m.objectToList(v)
-		if err != nil {
-			return err
-		}
-		n.List = list
+		n.List, err = m.objectToList(v)
 	case reflect.Ptr:
 		err = m.ptrToNode(v, n)
 	default:

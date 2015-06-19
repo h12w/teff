@@ -237,11 +237,11 @@ func (n *Node) String() string {
 	}
 	switch len(n.List) {
 	case 0:
-		return fmt.Sprintf("%v%s", n.Value, ref)
+		return fmt.Sprintf("%v%s(%v)", n.Value, ref, reflect.TypeOf(n.Value))
 	case 1:
-		return fmt.Sprintf("%v%s: %s", n.Value, ref, n.List[0].String())
+		return fmt.Sprintf("%v%s(%v): %s", n.Value, ref, reflect.TypeOf(n.Value), n.List[0].String())
 	default:
-		return fmt.Sprintf("%v%s: %s", n.Value, ref, n.List.String())
+		return fmt.Sprintf("%v%s(%v): %s", n.Value, ref, reflect.TypeOf(n.Value), n.List.String())
 	}
 }
 

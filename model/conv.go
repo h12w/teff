@@ -9,7 +9,6 @@ package model
 import (
 	"errors"
 	"reflect"
-	"strconv"
 )
 
 func New(v interface{}) (List, error) {
@@ -153,109 +152,4 @@ func (f *filler) fromNode(n *Node, v reflect.Value) (err error) {
 		f.register(n.RefID, v)
 	}
 	return
-}
-
-func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
-	if v.IsNil() {
-		return &Node{}, nil // avoid infinite loop
-	}
-	for v.Type().Kind() == reflect.Ptr {
-		if refNode, ok := m.find(v.Pointer()); ok {
-			return &Node{Value: refNode.RefID}, nil
-		}
-		v = reflect.Indirect(v)
-	}
-	return m.node(leaf(v))
-}
-
-func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
-	if refID, ok := n.Value.(RefID); ok {
-		ref := f.value(refID)
-		if ref.Type() != v.Type() {
-			ref = ref.Addr()
-			for v.Type() != ref.Type() {
-				v = allocIndirect(v)
-			}
-		}
-		v.Set(ref)
-		return nil
-	}
-	return f.fromNode(n, allocLeaf(v))
-}
-
-// maker makes a new List
-type maker struct {
-	m      map[uintptr]*Node
-	serial int
-}
-
-// filler fills from a list
-type filler struct {
-	m map[RefID]reflect.Value
-}
-
-func newFiller() *filler {
-	return &filler{make(map[RefID]reflect.Value)}
-}
-
-func newMaker() *maker {
-	return &maker{
-		m:      make(map[uintptr]*Node),
-		serial: 1,
-	}
-}
-
-func (m *maker) register(p uintptr, node *Node) {
-	m.m[p] = node
-}
-
-func (f *filler) register(refID RefID, v reflect.Value) {
-	f.m[refID] = v
-}
-
-func (m *maker) find(addr uintptr) (*Node, bool) {
-	if node, ok := m.m[addr]; ok {
-		if node.RefID == "" {
-			node.RefID = RefID(strconv.Itoa(m.serial))
-			m.serial++
-		}
-		return node, true
-	}
-	return nil, false
-}
-
-func (f *filler) value(refID RefID) reflect.Value {
-	return f.m[refID]
-}
-
-func leaf(v reflect.Value) reflect.Value {
-	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
-		v = reflect.Indirect(v)
-	}
-	return v
-}
-
-func addresses(v reflect.Value) (addrs []uintptr) {
-	if v.CanAddr() {
-		v = v.Addr()
-	}
-	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
-		addrs = append(addrs, v.Pointer())
-		v = reflect.Indirect(v)
-	}
-	return
-}
-
-func allocLeaf(v reflect.Value) reflect.Value {
-	for v.Type().Kind() == reflect.Ptr {
-		v = allocIndirect(v)
-	}
-	return v
-}
-
-func allocIndirect(v reflect.Value) reflect.Value {
-	if v.IsNil() {
-		v.Set(reflect.New(v.Type().Elem()))
-	}
-	return reflect.Indirect(v)
 }

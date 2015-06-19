@@ -108,10 +108,12 @@ important types in the standard libraries.
 Implementation restriction: for readability, `ref_id` can be further constrained
 to contain only `letter_digit`.
 
+```
     unicode_letter ::= <a Unicode code point classified as "Letter">
     unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
-    letter_digit   ::= unicode_letter | unicode_digit | "\_"
+    letter_digit   ::= unicode_letter | unicode_digit | "_"
     ref_id         ::= "^" letter_digit+
+```
 
 TEFF can represent a cyclic graph by reference annotation.
 
@@ -149,11 +151,13 @@ An array is represented as a list.
 To represent an array of array, the anonymous symbol `_` is introduced to
 represent the anonymous parent of a child array.
 
-    array_element ::= "\_"    start array end
+```
+    array_element ::= "_"    start array end
     -------------     ---    ----- ----- ---
      ↓                 ↓       ↓    ↓     ↓
     ----              -----  ----- ----  ---
     node          ::= value (start list  end)?
+```
 
 e.g.
 

@@ -91,7 +91,7 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
    the stack is popped and an `unindent` token is emitted until the length of
    the stack becomes 1.
 
-### Grammer
+### Grammar
 
     teff_file    ::= list EOF
     list         ::= node*
@@ -110,7 +110,7 @@ to contain only `letter_digit`.
 
     unicode_letter ::= <a Unicode code point classified as "Letter">
     unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
-    letter_digit   ::= unicode_letter | unicode_digit | "_"
+    letter_digit   ::= unicode_letter | unicode_digit | "\_"
     ref_id         ::= "^" letter_digit+
 
 TEFF can represent a cyclic graph by reference annotation.
@@ -149,7 +149,7 @@ An array is represented as a list.
 To represent an array of array, the anonymous symbol `_` is introduced to
 represent the anonymous parent of a child array.
 
-    array_element ::= "_"    start array end
+    array_element ::= "\_"    start array end
     -------------     ---    ----- ----- ---
      ↓                 ↓       ↓    ↓     ↓
     ----              -----  ----- ----  ---
@@ -337,5 +337,4 @@ e.g.
 
 ### Custom extensions (TODO)
 Custom encoding can be implemented as long as it does not conflict with the
-buildtin encodings.
-
+builtin encodings.

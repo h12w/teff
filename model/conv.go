@@ -8,6 +8,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -26,9 +27,6 @@ func Fill(l List, v interface{}) error {
 }
 
 func (m *maker) list(v reflect.Value) (List, error) {
-	if v.Type().Kind() == reflect.Ptr {
-		v = leaf(v)
-	}
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
 		node, err := m.node(v)
@@ -40,14 +38,13 @@ func (m *maker) list(v reflect.Value) (List, error) {
 		return m.listFromSlice(v)
 	case reflect.Struct:
 		return m.listFromStruct(v)
+	case reflect.Ptr:
+		return m.listFromPtr(v)
 	}
 	return nil, errors.New("maker.list: unsupported type")
 }
 
 func (f *filler) fromList(l List, v reflect.Value) error {
-	if v.Type().Kind() == reflect.Ptr {
-		v = allocLeaf(v)
-	}
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
 		if len(l) > 0 {
@@ -57,8 +54,10 @@ func (f *filler) fromList(l List, v reflect.Value) error {
 		return f.sliceFromList(l, v)
 	case reflect.Struct:
 		return f.structFromList(l, v)
+	case reflect.Ptr:
+		return f.ptrFromList(l, v)
 	}
-	return errors.New("List.fill: unsupported type")
+	return fmt.Errorf("List.fill: unsupported type: %v", v.Type())
 }
 
 func (m *maker) listFromSlice(v reflect.Value) (List, error) {

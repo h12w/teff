@@ -55,30 +55,6 @@ func (f *filler) value(refID RefID) reflect.Value {
 	return f.m[refID]
 }
 
-/*
-func (m *maker) populate(v reflect.Value) *maker {
-	s := []reflect.Value{v}
-	for len(s) > 0 {
-		s, v = s[:len(s)-1], s[len(s)-1]
-		for _, addr := range addresses(v) {
-			m.register(addr, &Node{})
-		}
-		switch v.Type().Kind() {
-		case reflect.Slice, reflect.Array:
-			for i := 0; i < v.Len(); i++ {
-				s = append(s, v.Index(i))
-			}
-		case reflect.Struct:
-			for i := 0; i < v.NumField(); i++ {
-				s = append(s, v.Field(i))
-			}
-		case reflect.Map:
-		}
-	}
-	return m
-}
-*/
-
 func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 	n := &Node{}
 	if v.IsNil() {
@@ -91,7 +67,7 @@ func (m *maker) nodeFromPtr(v reflect.Value) (*Node, error) {
 		}
 		v = reflect.Indirect(v)
 	}
-	return m.node(leaf(v))
+	return m.node(reflect.Indirect(v))
 }
 
 func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
@@ -106,14 +82,15 @@ func (f *filler) ptrFromNode(n *Node, v reflect.Value) error {
 		v.Set(ref)
 		return nil
 	}
-	return f.fromNode(n, allocLeaf(v))
+	return f.fromNode(n, allocIndirect(v))
 }
 
-func leaf(v reflect.Value) reflect.Value {
-	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
-		v = reflect.Indirect(v)
-	}
-	return v
+func (m *maker) listFromPtr(v reflect.Value) (List, error) {
+	return m.list(reflect.Indirect(v))
+}
+
+func (f *filler) ptrFromList(l List, v reflect.Value) error {
+	return f.fromList(l, allocIndirect(v))
 }
 
 func addresses(v reflect.Value) (addrs []uintptr) {
@@ -127,16 +104,14 @@ func addresses(v reflect.Value) (addrs []uintptr) {
 	return
 }
 
-func allocLeaf(v reflect.Value) reflect.Value {
-	for v.Type().Kind() == reflect.Ptr {
-		v = allocIndirect(v)
-	}
-	return v
+func allocIndirect(v reflect.Value) reflect.Value {
+	alloc(v)
+	return reflect.Indirect(v)
 }
 
-func allocIndirect(v reflect.Value) reflect.Value {
+func alloc(v reflect.Value) reflect.Value {
 	if v.IsNil() {
 		v.Set(reflect.New(v.Type().Elem()))
 	}
-	return reflect.Indirect(v)
+	return v
 }

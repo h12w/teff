@@ -23,18 +23,23 @@ func TestModel(t *testing.T) {
 		{nil, nil},
 
 		{1, List{{Value: 1}}},
+
 		{pi(1), List{{Value: 1}}},
+
 		{"a", List{{Value: "a"}}},
+
 		{ps("a"), List{{Value: "a"}}},
 
 		{
 			[]int{},
 			List{},
 		},
+
 		{
 			[]string{"a"},
 			List{{Value: "a"}},
 		},
+
 		{
 			[]int{1, 2},
 			List{{Value: 1}, {Value: 2}},

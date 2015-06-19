@@ -124,6 +124,8 @@ TEFF can represent a cyclic graph by reference annotation.
 `ref_id` is a unique ID within a TEFF file. It should be defined only once but
 can be referenced multiple times by `reference`s.
 
+`^0` is reserved for the root `list`.
+
 TEFF can optionally represent data type by type annotation.
 
     type_label      ::= "<" letter_digit+ ">"

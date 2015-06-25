@@ -7,12 +7,7 @@ import (
 
 // maker makes a new List
 type maker struct {
-	m      map[uintptr]*Node
-	serial int
-}
-type nodeCounter struct {
-	n      *Node
-	cnt    int
+	m      map[uintptr]Node
 	serial int
 }
 
@@ -28,30 +23,15 @@ func newFiller() *filler {
 
 func newMaker() *maker {
 	return &maker{
-		m:      make(map[uintptr]*Node),
+		m:      make(map[uintptr]Node),
 		serial: 1,
 	}
 }
 
-func (m *maker) register(v reflect.Value, node *Node) {
-	if node == nil {
-		return
-	}
-	for _, p := range addresses(v) {
-		m.m[p] = node
-	}
-}
-
-func (f *filler) register(refID RefID, v reflect.Value) {
-	if refID != "" {
-		f.m[refID] = v
-	}
-}
-
-func (m *maker) find(addr uintptr) (*Node, bool) {
+func (m *maker) find(addr uintptr) (Node, bool) {
 	if node, ok := m.m[addr]; ok {
-		if node.RefID == "" {
-			node.RefID = RefID(strconv.Itoa(m.serial))
+		if node.RefID() == "" {
+			node.SetRefID(RefID(strconv.Itoa(m.serial)))
 			m.serial++
 		}
 		return node, true
@@ -63,62 +43,37 @@ func (f *filler) value(refID RefID) reflect.Value {
 	return f.m[refID]
 }
 
-func (m *maker) ptrToNode(v reflect.Value, node *Node) error {
-	if v.IsNil() {
-		return nil // avoid infinite loop
-	}
-	for v.Type().Kind() == reflect.Ptr {
-		if refNode, ok := m.find(v.Pointer()); ok {
-			node.Value = refNode.RefID
-			return nil
-		}
-		v = reflect.Indirect(v)
-	}
-	return m.objectToNode(v, node)
-}
-
-func (f *filler) nodeToPtr(n *Node, v reflect.Value) error {
-	if refID, ok := n.Value.(RefID); ok {
-		ref := f.value(refID)
-		if ref.Type() != v.Type() {
-			ref = ref.Addr()
-			for v.Type() != ref.Type() {
-				v = allocIndirect(v)
-			}
-		}
-		v.Set(ref)
-		return nil
+func (f *filler) nodeToPtr(n Node, v reflect.Value) error {
+	if value, ok := n.(*Value); ok {
+		return f.valueToPtr(value, v)
 	}
 	return f.nodeToObject(n, allocIndirect(v))
 }
 
-func (m *maker) ptrToList(v reflect.Value) (List, error) {
-	return m.objectToList(reflect.Indirect(v))
-}
-
-func (f *filler) listToPtr(l List, v reflect.Value) error {
-	return f.listToObject(l, allocIndirect(v))
-}
-
-func addresses(v reflect.Value) (addrs []uintptr) {
-	if v.CanAddr() {
-		v = v.Addr()
+func (m *maker) ptrToNode(v reflect.Value) (Node, error) {
+	if v.IsNil() {
+		return nil, nil // avoid infinite loop
 	}
-	for v.Type().Kind() == reflect.Ptr && !v.IsNil() {
-		addrs = append(addrs, v.Pointer())
+	for v.Type().Kind() == reflect.Ptr {
+		if refNode, ok := m.find(v.Pointer()); ok {
+			return &Value{V: refNode.RefID}, nil
+		}
 		v = reflect.Indirect(v)
 	}
-	return
+	return m.objectToNode(v)
 }
 
-func allocIndirect(v reflect.Value) reflect.Value {
-	alloc(v)
-	return reflect.Indirect(v)
-}
-
-func alloc(v reflect.Value) reflect.Value {
-	if v.IsNil() {
-		v.Set(reflect.New(v.Type().Elem()))
+func (f *filler) valueToPtr(v *Value, o reflect.Value) error {
+	if refID, ok := v.V.(RefID); ok {
+		ref := f.value(refID)
+		if ref.Type() != o.Type() {
+			ref = ref.Addr()
+			for o.Type() != ref.Type() {
+				o = allocIndirect(o)
+			}
+		}
+		o.Set(ref)
+		return nil
 	}
-	return v
+	return f.valueToObject(v, allocIndirect(o))
 }

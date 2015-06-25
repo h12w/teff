@@ -1,81 +1,66 @@
-/*
-Package model converts almost any Go data structures into a tree model:
-1. references are replaced with RefIDs
-2. pointer & interfaces are replaced with values
-3. reflections are hidden from outside if possible
-*/
 package model
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
 
-func New(v interface{}) (List, error) {
+func New(v interface{}) (Node, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return newMaker().objectToList(reflect.ValueOf(v))
+	return newMaker().objectToNode(reflect.ValueOf(v))
 }
 
-func (l List) Fill(v interface{}) error {
+func Fill(n Node, v interface{}) error {
 	if v == nil {
 		return nil
 	}
-	return newFiller().listToObject(l, reflect.ValueOf(v))
+	return newFiller().nodeToObject(n, reflect.ValueOf(v))
 }
 
-func (m *maker) objectToList(v reflect.Value) (List, error) {
+func (m *maker) objectToNode(v reflect.Value) (Node, error) {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		var node Node
-		err := m.objectToNode(v, &node)
-		if err != nil {
-			return nil, err
-		}
-		return List{&node}, nil
-	case reflect.Slice:
-		return m.sliceToList(v)
-	case reflect.Struct:
-		return m.structToList(v)
+		return m.objectToValue(v)
+	case reflect.Slice, reflect.Array:
+		return m.arrayToArray(v)
 	case reflect.Ptr:
-		return m.ptrToList(v)
+		return m.ptrToNode(v)
 	}
-	return nil, errors.New("maker.list: unsupported type")
+	return nil, fmt.Errorf("maker.objectToNode: unsupported type: %v", v.Type())
 }
 
-func (f *filler) listToObject(l List, v reflect.Value) error {
+func (f *filler) nodeToObject(node Node, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		if len(l) > 0 {
-			return f.nodeToObject(l[0], v)
+		if value, ok := node.(*Value); ok {
+			return f.valueToObject(value, v)
 		}
-	case reflect.Slice:
-		return f.listToSlice(l, v)
-	case reflect.Struct:
-		return f.listToStruct(l, v)
+	case reflect.Slice, reflect.Array:
+		if array, ok := node.(*Array); ok {
+			return f.arrayToArray(array, v)
+		}
 	case reflect.Ptr:
-		return f.listToPtr(l, v)
+		return f.nodeToPtr(node, v)
 	}
-	return fmt.Errorf("List.fill: unsupported type: %v", v.Type())
+	return fmt.Errorf("filler.nodeToObject: unsupported type: %v", v.Type())
 }
 
-func (m *maker) sliceToList(v reflect.Value) (List, error) {
-	l := make(List, v.Len())
+func (m *maker) arrayToArray(v reflect.Value) (*Array, error) {
+	nodes := make([]Node, v.Len())
 	for i := 0; i < v.Len(); i++ {
-		var node Node
-		err := m.objectToNode(v.Index(i), &node)
+		node, err := m.objectToNode(v.Index(i))
 		if err != nil {
 			return nil, err
 		}
-		l[i] = &node
+		nodes[i] = node
 	}
-	return l, nil
+	return &Array{L: nodes}, nil
 }
 
-func (f *filler) listToSlice(l List, v reflect.Value) error {
-	for i, n := range l {
+func (f *filler) arrayToArray(a *Array, v reflect.Value) error {
+	for i, n := range a.L {
 		v.Set(reflect.Append(v, reflect.New(v.Type().Elem()).Elem()))
 		elem := v.Index(i)
 		if err := f.nodeToObject(n, elem); err != nil {
@@ -85,63 +70,35 @@ func (f *filler) listToSlice(l List, v reflect.Value) error {
 	return nil
 }
 
-func (m *maker) structToList(v reflect.Value) (List, error) {
-	t := v.Type()
-	l := make(List, v.NumField())
-	for i := 0; i < v.NumField(); i++ {
-		var node Node
-		err := m.objectToNode(v.Field(i), &node)
-		if err != nil {
-			return nil, err
-		}
-		l[i] = &Node{Value: Identifier(t.Field(i).Name), List: List{&node}}
-	}
-	return l, nil
-}
-
-func (f *filler) listToStruct(l List, v reflect.Value) error {
-	for _, n := range l {
-		if len(n.List) == 0 {
-			continue
-		}
-		if fieldName, ok := n.Value.(Identifier); ok {
-			field := v.FieldByName(string(fieldName))
-			if err := f.nodeToObject(n.List[0], field); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (m *maker) objectToNode(v reflect.Value, n *Node) (err error) {
+func (m *maker) objectToValue(v reflect.Value) (*Value, error) {
 	switch v.Type().Kind() {
 	case reflect.Int:
-		n.Value = int(v.Int())
+		return &Value{V: int(v.Int())}, nil
 	case reflect.String:
-		n.Value = v.String()
-	case reflect.Slice:
-		n.List, err = m.objectToList(v)
-	case reflect.Ptr:
-		err = m.ptrToNode(v, n)
-	default:
-		err = errors.New("node: unsupported type")
+		return &Value{V: v.String()}, nil
 	}
-	m.register(v, n)
-	return
+	return nil, fmt.Errorf("maker.objectToValue: unsupported type: %v", v.Type())
 }
 
-func (f *filler) nodeToObject(n *Node, v reflect.Value) (err error) {
-	f.register(n.RefID, v)
+func (f *filler) valueToObject(value *Value, v reflect.Value) error {
 	switch v.Type().Kind() {
 	case reflect.Int, reflect.String:
-		v.Set(reflect.ValueOf(n.Value))
-	case reflect.Slice:
-		err = f.listToObject(n.List, v)
+		v.Set(reflect.ValueOf(value.V))
+		return nil
 	case reflect.Ptr:
-		err = f.nodeToPtr(n, v)
-	default:
-		err = errors.New("Node.fill: unsupported type")
+		return f.valueToPtr(value, v)
 	}
-	return
+	return fmt.Errorf("filler.valueToObject: unsupported type: %v", v.Type())
+}
+
+func allocIndirect(v reflect.Value) reflect.Value {
+	alloc(v)
+	return reflect.Indirect(v)
+}
+
+func alloc(v reflect.Value) reflect.Value {
+	if v.IsNil() {
+		v.Set(reflect.New(v.Type().Elem()))
+	}
+	return v
 }

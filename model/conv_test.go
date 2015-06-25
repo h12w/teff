@@ -17,51 +17,70 @@ TODO:
 func TestModel(t *testing.T) {
 	for i, testcase := range []struct {
 		v interface{}
-		n Node
+		n *Node
 	}{
 		{nil, nil},
 
-		{1, &Value{V: 1}},
+		{1, value(1)},
 
-		{pi(1), &Value{V: 1}},
+		{pi(1), value(1)},
 
-		{"a", &Value{V: "a"}},
+		{"a", value("a")},
 
-		{ps("a"), &Value{V: "a"}},
+		{ps("a"), value("a")},
 
-		{
-			[]int{},
-			&Array{L: []Node{}},
-		},
+		//{
+		//	[]int{},
+		//	&Array{L: []Node{}},
+		//},
 
-		{
-			[]string{"a"},
-			&Array{L: []Node{&Value{V: "a"}}},
-		},
+		//{
+		//	[]string{"a"},
+		//	&Array{L: []Node{
+		//		&Value{V: "a"},
+		//	}},
+		//},
 
-		// {
-		// 	[]int{1, 2},
-		// 	List{{Value: 1}, {Value: 2}},
-		// },
-		// {
-		// 	[][]int{{1, 2}, {3}},
-		// 	List{
-		// 		{List: List{{Value: 1}, {Value: 2}}},
-		// 		{List: List{{Value: 3}}},
-		// 	},
-		// },
-		//
-		// {
-		// 	[]*int{pi(1), pi(2)},
-		// 	List{{Value: 1}, {Value: 2}},
-		// },
-		// {
-		// 	func() []*int {
-		// 		i := pi(3)
-		// 		return []*int{i, i}
-		// 	}(),
-		// 	List{{RefID: RefID("1"), Value: 3}, {Value: RefID("1")}},
-		// },
+		//{
+		//	[]int{1, 2},
+		//	&Array{L: []Node{
+		//		&Value{V: 1},
+		//		&Value{V: 2},
+		//	}},
+		//},
+
+		//{
+		//	[][]int{{1, 2}, {3}},
+		//	&Array{L: []Node{
+		//		&Array{L: []Node{
+		//			&Value{V: 1},
+		//			&Value{V: 2},
+		//		}},
+		//		&Array{L: []Node{
+		//			&Value{V: 3},
+		//		}},
+		//	}},
+		//},
+
+		//{
+		//	[]*int{pi(1), pi(2)},
+		//	&Array{L: []Node{
+		//		&Value{V: 1},
+		//		&Value{V: 2},
+		//	}},
+		//},
+
+		//{
+		//	func() []*int {
+		//		i := pi(3)
+		//		return []*int{i, i}
+		//	}(),
+		//	&Array{L: []Node{
+		//		&Value{RefID: RefID("1"), V: 3},
+		//		&Value{V: RefID("1")},
+		//	}},
+		//},
+
 		// {
 		// 	struct{}{},
 		// 	List{},
@@ -202,11 +221,11 @@ func TestModel(t *testing.T) {
 			}
 		}
 		{
-			if testcase.v == nil {
+			if testcase.n == nil {
 				continue
 			}
 			pv := newValueOf(testcase.v)
-			if err := Fill(testcase.n, pv); err != nil {
+			if err := testcase.n.Fill(pv); err != nil {
 				t.Fatalf("testcase %d: Fill: %v", i, err)
 			}
 			node, err := New(reflect.ValueOf(pv).Elem().Interface())
@@ -235,4 +254,8 @@ func pi(i int) *int {
 
 func ps(s string) *string {
 	return &s
+}
+
+func value(v interface{}) *Node {
+	return &Node{C: Value{v}}
 }

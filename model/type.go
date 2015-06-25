@@ -7,82 +7,67 @@ import (
 )
 
 const (
-	ValueNodeType NodeType = iota
-	ArrayNodeType
-	MapNodeType
+	ValueNode NodeType = iota
+	ArrayNode
+	MapNode
 )
 
 type (
-	NodeType int
-	Node     interface {
-		Type() NodeType
-		RefID() RefID
-		SetRefID(RefID)
-		String() string
-	}
-	Value struct {
-		V interface{}
-		nodeBase
-	}
-	Map struct {
-		KV []KeyValue
-		nodeBase
-	}
-	KeyValue struct {
-		K interface{}
-		V Node
-	}
-	Array struct {
-		L []Node
-		nodeBase
-	}
-	nodeBase struct {
-		r RefID
+	Node struct {
+		RefID RefID
+		C
 	}
 	RefID string
+	C     interface {
+		String() string
+		Type() NodeType
+	}
+	NodeType int
+	Value    struct {
+		V interface{}
+	}
+	Map      []KeyValue
+	KeyValue struct {
+		K interface{}
+		V *Node
+	}
+	Array []*Node
 )
 
-func (b *nodeBase) RefID() RefID {
-	return b.r
+func (Value) Type() NodeType {
+	return ValueNode
 }
-func (b *nodeBase) SetRefID(refID RefID) {
-	b.r = refID
+func (Map) Type() NodeType {
+	return MapNode
 }
-
-func (n *Value) Type() NodeType {
-	return ValueNodeType
-}
-func (n *Map) Type() NodeType {
-	return MapNodeType
-}
-func (n *Array) Type() NodeType {
-	return ArrayNodeType
+func (Array) Type() NodeType {
+	return ArrayNode
 }
 
-func (n *Value) String() string {
-	return fmt.Sprintf("%v%s(%v)", n.V, n.nodeBase.String(), reflect.TypeOf(n.V).Name())
+func (n Value) String() string {
+	return fmt.Sprintf("%v(%v)", n.V, reflect.TypeOf(n.V).Name())
 }
 
-func (n *Array) String() string {
-	ss := make([]string, len(n.L))
+func (n Array) String() string {
+	ss := make([]string, len(n))
 	for i := range ss {
-		ss[i] = n.L[i].String()
+		ss[i] = n[i].String()
 	}
 	return "{" + strings.Join(ss, ", ") + "}"
 }
 
-func (n *Map) String() string {
-	ss := make([]string, len(n.KV))
+func (n Map) String() string {
+	ss := make([]string, len(n))
 	for i := range ss {
-		ss[i] = fmt.Sprint(n.KV[i].K) + ":" + n.KV[i].V.String()
+		ss[i] = fmt.Sprint(n[i].K) + ":" + n[i].V.String()
 	}
 	return "{" + strings.Join(ss, ", ") + "}"
 }
 
-func (n *nodeBase) String() string {
-	r := string(n.r)
+func (n Node) String() string {
+	r := string(n.RefID)
 	if r != "" {
 		r = "^" + r
 	}
-	return r
+	return r + " " + n.C.String()
 }

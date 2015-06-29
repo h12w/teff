@@ -7,8 +7,12 @@ import (
 
 // maker makes a new List
 type maker struct {
-	m      map[uintptr]*Node
+	m      map[uintptr]nodeRegistry
 	serial int
+}
+type nodeRegistry struct {
+	node     *Node
+	isSource bool
 }
 
 // filler fills from a list
@@ -23,18 +27,18 @@ func newFiller() *filler {
 
 func newMaker() *maker {
 	return &maker{
-		m:      make(map[uintptr]*Node),
+		m:      make(map[uintptr]nodeRegistry),
 		serial: 1,
 	}
 }
 
 func (m *maker) find(addr uintptr) (*Node, bool) {
-	if node, ok := m.m[addr]; ok {
-		if node.RefID == "" {
-			node.RefID = RefID(strconv.Itoa(m.serial))
+	if r, ok := m.m[addr]; ok {
+		if r.node.RefID == "" {
+			r.node.RefID = RefID(strconv.Itoa(m.serial))
 			m.serial++
 		}
-		return node, true
+		return r.node, true
 	}
 	return nil, false
 }
@@ -47,7 +51,7 @@ func (f *filler) nodeToPtr(n *Node, v reflect.Value) error {
 	if value, ok := n.C.(Value); ok {
 		return f.valueToPtr(value, v)
 	}
-	return f.nodeToObject(n, allocIndirect(v))
+	return f.nodeTo(n, allocIndirect(v))
 }
 
 func (m *maker) ptrToNode(v reflect.Value) (*Node, error) {
@@ -60,7 +64,7 @@ func (m *maker) ptrToNode(v reflect.Value) (*Node, error) {
 		}
 		v = reflect.Indirect(v)
 	}
-	return m.objectToNode(v)
+	return m.toNode(v)
 }
 
 func (f *filler) valueToPtr(v Value, o reflect.Value) error {
@@ -75,5 +79,5 @@ func (f *filler) valueToPtr(v Value, o reflect.Value) error {
 		o.Set(ref)
 		return nil
 	}
-	return f.valueToObject(v, allocIndirect(o))
+	return f.valueTo(v, allocIndirect(o))
 }

@@ -64,10 +64,15 @@ func (n Map) String() string {
 	return "{" + strings.Join(ss, ", ") + "}"
 }
 
-func (n Node) String() string {
+func (n *Node) String() string {
 	r := string(n.RefID)
 	if r != "" {
 		r = "^" + r
 	}
 	return r + " " + n.C.String()
+}
+
+func (n *Node) Ref(r RefID) *Node {
+	n.RefID = r
+	return n
 }

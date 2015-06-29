@@ -29,58 +29,58 @@ func TestModel(t *testing.T) {
 
 		{ps("a"), value("a")},
 
-		//{
-		//	[]int{},
-		//	&Array{L: []Node{}},
-		//},
+		{
+			[]int{},
+			array(),
+		},
 
-		//{
-		//	[]string{"a"},
-		//	&Array{L: []Node{
-		//		&Value{V: "a"},
-		//	}},
-		//},
+		{
+			[]string{"a"},
+			array(
+				value("a"),
+			),
+		},
 
-		//{
-		//	[]int{1, 2},
-		//	&Array{L: []Node{
-		//		&Value{V: 1},
-		//		&Value{V: 2},
-		//	}},
-		//},
+		{
+			[]int{1, 2},
+			array(
+				value(1),
+				value(2),
+			),
+		},
 
-		//{
-		//	[][]int{{1, 2}, {3}},
-		//	&Array{L: []Node{
-		//		&Array{L: []Node{
-		//			&Value{V: 1},
-		//			&Value{V: 2},
-		//		}},
-		//		&Array{L: []Node{
-		//			&Value{V: 3},
-		//		}},
-		//	}},
-		//},
+		{
+			[][]int{{1, 2}, {3}},
+			array(
+				array(
+					value(1),
+					value(2),
+				),
+				array(
+					value(3),
+				),
+			),
+		},
 
-		//{
-		//	[]*int{pi(1), pi(2)},
-		//	&Array{L: []Node{
-		//		&Value{V: 1},
-		//		&Value{V: 2},
-		//	}},
-		//},
+		{
+			[]*int{pi(1), pi(2)},
+			array(
+				value(1),
+				value(2),
+			),
+		},
 
-		//{
-		//	func() []*int {
-		//		i := pi(3)
-		//		return []*int{i, i}
-		//	}(),
-		//	&Array{L: []Node{
-		//		&Value{RefID: RefID("1"), V: 3},
-		//		&Value{V: RefID("1")},
-		//	}},
-		//},
-
+		// {
+		// 	func() []*int {
+		// 		i := pi(3)
+		// 		return []*int{i, i}
+		// 	}(),
+		// 	array(
+		// 		value(3).Ref("1"),
+		// 		value(RefID("1")),
+		// 	),
+		// },
+		//
 		// {
 		// 	struct{}{},
 		// 	List{},
@@ -258,4 +258,11 @@ func ps(s string) *string {
 
 func value(v interface{}) *Node {
 	return &Node{C: Value{v}}
+}
+
+func array(n ...*Node) *Node {
+	if len(n) == 0 {
+		n = []*Node{}
+	}
+	return &Node{C: Array(n)}
 }

@@ -61,8 +61,7 @@ A TEFF file is also a sequence of lines separated by `newline`.
     indent_space   ::= char_space*
     annotation     ::= "#" char_inline*
     value          ::= reference | line_value
-    reference      ::= "^" ref_id
-    ref_id         ::= char_inline+
+    reference      ::= "^" char_inline*
     line_value     ::= <line_string except annotation & reference>
     line_string    ::= char_visible+ char_inline*
 
@@ -103,28 +102,7 @@ In this section, extensions for annotations & common data types are specified.
 These definitions should cover almost all builtin types and some of the
 important types in the standard libraries.
 
-### Type & reference annotations
-
-Implementation restriction: for readability, `ref_id` can be further constrained
-to contain only `letter_digit`.
-
-    unicode_letter ::= <a Unicode code point classified as "Letter">
-    unicode_digit  ::= <a Unicode code point classified as "Decimal Digit">
-    letter_digit   ::= unicode_letter | unicode_digit | "_"
-    ref_id         ::= "^" letter_digit+
-
-TEFF can represent a cyclic graph by reference annotation.
-
-    ref_annotation  ::= "#" spaces? ref_id
-    --------------      --- --------------
-        ↓                ↓       ↓
-    ----------          --- ------------
-    annotation      ::= "#" char_inline*
-
-`ref_id` is a unique ID within a TEFF file. It should be defined only once but
-can be referenced multiple times by `reference`s.
-
-`^0` is reserved for the root `list`.
+### Type annotation
 
 TEFF can optionally represent data type by type annotation.
 
@@ -135,6 +113,25 @@ TEFF can optionally represent data type by type annotation.
         ↓                ↓       ↓
     ----------          --- ------------
     annotation      ::= "#" char_inline*
+
+### Reference
+
+TEFF can represent a cyclic graph by references. A reference is an absolute path
+from the root node to one of its descendants.
+
+The reference of the root object is `^` itself.
+
+Each level of path is represented with `ref_segment` that depends on the type of
+the parent object of the `seg_segment`.
+
+    reference      ::= "^" (ref_segment)*
+    ---------          --- --------------
+        ↓               ↓       ↓
+    ---------          --- ------------
+    reference      ::= "^" char_inline*
+
+And the specific definition of `ref_segment` are defined in each parent types
+accordingly, like `array` and `map`.
 
 ### Array
 
@@ -165,6 +162,11 @@ e.g.
         4
         5
 
+The `ref_segment` for a child of an array is defined as below:
+
+    ref_segment   ::= "[" array_index "]"
+    array_index   ::= decimals
+
 ### Map
 A map is represented with a list of key-value pairs. Each pair is represented as
 a node.
@@ -192,6 +194,15 @@ Encoding of `map_key`:
 * numeric: refer to [`numeric`](#numeric-value)
 * others: implementation specific, as long as the encoding satisfies `value` and
 the ending of the encoding is recognized without relying on the `:`.
+
+The `ref_segment` for a child of a map depends on its `map_key`.
+
+When the `map_key` is an identifier:
+
+    ref_segment   ::= "[" array_index "]"
+    array_index   ::= decimals
+
+
 
 ### Nil
 
@@ -261,7 +272,7 @@ Boolean value is a `value` of either true of false.
 Numeric value is a `value` that encode a number.
 
     sign       ::= "+" | "-"
-    decimals   ::= [1-9] [0-9]*
+    decimals   ::= "0" | [1-9] [0-9]*
 
 #### Integer
     integer    ::= sign? decimals

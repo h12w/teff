@@ -213,11 +213,13 @@ quoted).
     -----                  ----------------------
     value              ::= reference | line_value
 
-A `raw_string` is the same as a `value` as long as it does not start with `#`.
+A `raw_string` is the same as a `value` as long as it is not quoted with double
+quotes `"`, or starts with `char_space`, `#` or `^`.
 
     raw_string         ::= value
 
-An `interpreted_string` can contain any Unicode code points by escape sequences.
+An `interpreted_string` is quoted with double quotes `"` and can contain any
+Unicode code points by escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
 
@@ -334,6 +336,12 @@ An IPv6 address value is an `value` encoded with
 e.g.
 
     2001:4860:0:2001::68
+
+### Multi-line String (TODO)
+
+### Multi-line Regular Expressions (TODO)
+
+### URL
 
 ### Custom extensions (TODO)
 Custom encoding can be implemented as long as it does not conflict with the

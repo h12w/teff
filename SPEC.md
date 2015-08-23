@@ -92,17 +92,18 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
 
     teff_file    ::= list EOF
     list         ::= node*
-    node         ::= annotation* (value | reference) (start list end)?
+    node         ::= annotation* (value_list | reference)
+    value_list   ::= value (start list end)?
 
 Extensions
 ----------
-In this section, extensions for annotations & common data types are specified.
-These definitions should cover almost all built-in types and some of the
-important types in the standard libraries.
+In this section, extensions for `annotation`, `reference`, `list` and `value`
+are defined to represent major data types, including almost all built-in types
+and some of the important types in the standard libraries.
 
 ### Type annotation
 
-TEFF can optionally represent data type by type annotation.
+TEFF can optionally specify data types by type annotations.
 
     type_annotation ::= "#" spaces? type_label
     ---------------     --- ------------------
@@ -131,8 +132,8 @@ the parent object of the `seg_segment`.
     ---------          --- ------------
     reference      ::= "^" char_inline*
 
-And the specific definition of `ref_segment` are defined in each parent types
-accordingly, like `array` and `map`.
+And the specific definition of `ref_segment` depends on the parent type, e.g.
+`array` or `map`.
 
 ### Array
 
@@ -150,8 +151,8 @@ represent the anonymous parent of a child array.
     array_element ::= "_"    start array end
     -------------     ---    ----- ----- ---
      ↓                 ↓       ↓    ↓     ↓
-    ----              -----  ----- ----  ---
-    node          ::= value (start list  end)?
+    ----------        -----  ----- ----  ---
+    value_list    ::= value (start list  end)?
 
 e.g.
 
@@ -172,20 +173,20 @@ The `ref_segment` for a child of an array is defined as below:
 A map is represented with a list of key-value pairs. Each pair is represented as
 a node.
 
-    map       ::= key_value*
-    ---           ----------
-     ↓              ↓
-    ----          -----
-    list      ::= node*
+    map        ::= key_value*
+    ---            ----------
+     ↓               ↓
+    ----           -----
+    list       ::= node*
 
 The key in a key-value pair is encoded a `value` suffixed by a `:`, and the
 value in a key-value pair is encoded as a `list`.
 
-    key_value ::= map_key ":" start map_value end
-    ---------     ----------- ----- --------- ---
-     ↓              ↓           ↓      ↓       ↓
-    ----          -----       -----   ----    ---
-    node      ::= value      (start   list    end)?
+    key_value  ::= map_key ":" start map_value end
+    ---------      ----------- ----- --------- ---
+     ↓               ↓           ↓      ↓       ↓
+    ----------     -----       -----   ----    ---
+    value_list ::= value      (start   list    end)?
 
 Encoding of `map_key`:
 

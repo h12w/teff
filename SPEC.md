@@ -16,10 +16,10 @@ In general, TEFF are organized into two layers, core and extensions. The
 [core](#core) of TEFF represents a tree with annotated nodes, which forms
 an extensible foundation with minimal constraints. The [extensions](#extensions)
 of TEFF define encodings of major data types and allow custom encoding of user
-defined types. The encodings of extensions are only contrained by the core, i.e.
-any two extensions may have the same representation without causing any confliction.
+defined types. The encodings of extensions are only constrained by the core, i.e.
+any two extensions may have the same representation without causing any conflict.
 
-This specification is a followup work of [OGDL 2.0](https://github.com/ogdl)
+This specification is a follow-up work of [OGDL 2.0](https://github.com/ogdl)
 ([OGDL](http://ogdl.org/) was invented by Rolf Veen, and we cooperated in
 writing its 2.0 spec).
 
@@ -356,4 +356,4 @@ e.g.
 
 ### Custom extensions (TODO)
 Custom encoding can be implemented as long as it does not conflict with the
-builtin encodings.
+built-in encodings.

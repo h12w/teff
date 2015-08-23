@@ -40,8 +40,8 @@ Core
 A TEFF file is a sequence of [Unicode](http://unicode.org/) code points encoded
 in [UTF-8](http://www.unicode.org/versions/latest/ch03.pdf).
 
-Except `\t` (U+0009), `\n` (U+000A) and `\r` (U+000D), code points less than
-U+0020 (space) are considered invalid and should not appear in a TEFF file.
+Only `char_valid`, i.e. `\t` (U+0009), `\n` (U+000A), `\r` (U+000D) and code
+points larger or equal to U+0020 (space) are considered valid in a TEFF file.
 
     char_valid     ::= char_inline | char_break
     char_inline    ::= char_visible | char_space
@@ -53,17 +53,15 @@ U+0020 (space) are considered invalid and should not appear in a TEFF file.
 
 A TEFF file is also a sequence of lines separated by `newline`.
 
-    line           ::= empty_line | valid_line
+    line           ::= empty_line | content_line
     empty_line     ::= char_space* newline
     newline        ::= char_break | "\r\n" | EOF
     EOF            ::= <end of file>
-    valid_line     ::= indent_space (annotation | value) newline
+    content_line   ::= indent_space (annotation | reference | value) newline
     indent_space   ::= char_space*
     annotation     ::= "#" char_inline*
-    value          ::= reference | line_value
     reference      ::= "^" char_inline*
-    line_value     ::= <line_string except annotation & reference>
-    line_string    ::= char_visible char_inline*
+    value          ::= [^\x00-\x20#^] char_inline*
 
 ### Indents
 
@@ -94,25 +92,28 @@ Tokens `indent` and `unindent` are emitted by the rules described below:
 
     teff_file    ::= list EOF
     list         ::= node*
-    node         ::= annotation* value (start list end)?
+    node         ::= annotation* (value | reference) (start list end)?
 
 Extensions
 ----------
 In this section, extensions for annotations & common data types are specified.
-These definitions should cover almost all builtin types and some of the
+These definitions should cover almost all built-in types and some of the
 important types in the standard libraries.
 
 ### Type annotation
 
 TEFF can optionally represent data type by type annotation.
 
-    type_label      ::= "<" letter_digit+ ">"
-
     type_annotation ::= "#" spaces? type_label
     ---------------     --- ------------------
         ↓                ↓       ↓
     ----------          --- ------------
     annotation      ::= "#" char_inline*
+
+    type_label      ::= "<" letter_digit+ ">"
+    unicode_letter  ::= <a Unicode code point classified as "Letter">
+    unicode_digit   ::= <a Unicode code point classified as "Decimal Digit">
+    letter_digit    ::= unicode_letter | unicode_digit | "_"
 
 ### Reference
 
@@ -211,8 +212,8 @@ The special `value` nil is used to represent an uninitialized nullable node.
     nil   ::= "nil"
     ---       -----
      ↓          ↓
-    -----     ----------------------
-    value ::= reference | line_value
+    -----     ---------------------------
+    value ::= [^\x00-\x20#^] char_inline*
 
 ### String
 A string is represented as either a `raw_string` or an `interpreted_string` (double
@@ -221,8 +222,8 @@ quoted).
     string             ::= raw_string | interpreted_string
     ------                 -------------------------------
       ↓                               ↓
-    -----                  ----------------------
-    value              ::= reference | line_value
+    -----                  ---------------------------
+    value              ::= [^\x00-\x20#^] char_inline*
 
 A string value can be represented as a `raw_string` if and only if:
 
@@ -240,8 +241,8 @@ bytes by escape sequences.
     interpreted_string ::= '"' quoted_char* '"'
     ------------------     --------------------
       ↓                             ↓
-    -----                  ----------------------
-    value              ::= reference | line_value
+    -----                  ---------------------------
+    value              ::= [^\x00-\x20#^] char_inline*
 
 #### Escape sequences
 
@@ -268,8 +269,8 @@ Boolean value is a `value` of either true of false.
     boolean ::= "true" | "false"
     -------     ----------------
       ↓                ↓
-    -----       ----------------------
-    value   ::= reference | line_value
+    -----       ---------------------------
+    value   ::= [^\x00-\x20#^] char_inline*
 
 ### Numeric value
 Numeric value is a `value` that encode a number.
@@ -281,8 +282,8 @@ Numeric value is a `value` that encode a number.
     integer    ::= sign? decimals
     -------        --------------
        ↓                 ↓
-    -----          ----------------------
-    value      ::= reference | line_value
+    -----          ---------------------------
+    value      ::= [^\x00-\x20#^] char_inline*
 
 #### Float
 Float value is a `value` that encode a floating point number:
@@ -295,8 +296,8 @@ Float value is a `value` that encode a floating point number:
     float      ::= sign? float_base
     -----          ----------------
       ↓                   ↓
-    -----          ----------------------
-    value      ::= reference | line_value
+    -----          ---------------------------
+    value      ::= [^\x00-\x20#^] char_inline*
 
 #### Complex
     int_float  ::= decimals | float_base
@@ -304,8 +305,8 @@ Float value is a `value` that encode a floating point number:
     complex    ::= sign? int_float sign int_float "i"
     -------        ----------------------------------
       ↓                        ↓
-    -----          ----------------------
-    value      ::= reference | line_value
+    -----          ---------------------------
+    value      ::= [^\x00-\x20#^] char_inline*
 
 ### Date/time (TODO: use a shorter representation)
 A date/time value is an `value` encoded with
@@ -314,8 +315,8 @@ A date/time value is an `value` encoded with
     date_time ::= rfc3339_date_time
     ---------     -----------------
       ↓                   ↓
-    -----         ----------------------
-    value     ::= reference | line_value
+    -----         ---------------------------
+    value     ::= [^\x00-\x20#^] char_inline*
 
 e.g.
 
@@ -331,8 +332,8 @@ An IPv4 address value is an `value` encoded with dot-decimal notation:
     ipv4  ::= decimals "." decimals "." decimals "." decimals
     ----      -----------------------------------------------
      ↓                    ↓
-    -----     --------------------------
-    value ::= char_visible+ char_inline*
+    -----     ---------------------------
+    value ::= [^\x00-\x20#^] char_inline*
 
 e.g.
 
@@ -344,8 +345,8 @@ An IPv6 address value is an `value` encoded with
     ipv6  ::= rfc5952_ipv6_address
     ----      --------------------
      ↓                 ↓
-    -----     ----------------------
-    value ::= reference | line_value
+    -----     ---------------------------
+    value ::= [^\x00-\x20#^] char_inline*
 
 e.g.
 

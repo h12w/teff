@@ -63,7 +63,7 @@ A TEFF file is also a sequence of lines separated by `newline`.
     value          ::= reference | line_value
     reference      ::= "^" char_inline*
     line_value     ::= <line_string except annotation & reference>
-    line_string    ::= char_visible+ char_inline*
+    line_string    ::= char_visible char_inline*
 
 ### Indents
 
@@ -188,10 +188,10 @@ value in a key-value pair is encoded as a `list`.
 
 Encoding of `map_key`:
 
-* identifier: such as struct field names, refer to [`raw_string`](#string)
-* string: refer to [`interpreted_string`](#string)
-* boolean: refer to [`boolean`](#boolean-value)
-* numeric: refer to [`numeric`](#numeric-value)
+* identifier: [`raw_string`](#string)
+* string: [`interpreted_string`](#string)
+* boolean: [`boolean`](#boolean-value)
+* numeric: [`numeric`](#numeric-value)
 * others: implementation specific, as long as the encoding satisfies `value` and
 the ending of the encoding is recognized without relying on the `:`.
 
@@ -224,13 +224,16 @@ quoted).
     -----                  ----------------------
     value              ::= reference | line_value
 
-A `raw_string` is the same as a `value` as long as it is not quoted with double
-quotes `"`, or starts with `char_space`, `#` or `^`.
+A string value can be represented as a `raw_string` if and only if:
+
+* It is not empty.
+* It does not starts with `char_space`, `#` or `^`.
+* It only contains `char_inline`.
 
     raw_string         ::= value
 
 An `interpreted_string` is quoted with double quotes `"` and can contain any
-Unicode code points by escape sequences.
+bytes by escape sequences.
 
     quoted_char        ::= (char_inline - '"') | '\\"'
 
@@ -251,7 +254,7 @@ Unicode code points by escape sequences.
     \r    U+000D carriage return
     \\    U+005C backslash
     \"    U+0022 double quote "
-    \x    Unicode code point represented with two hexadecimal digits followed by \x
+    \x    Any byte represented with two hexadecimal digits followed by \x
     \u    Unicode code point represented with exactly 4 hexadecimal digits followed by \u
     \U    Unicode code point represented with exactly 8 hexadecimal digits followed by \U
 

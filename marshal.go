@@ -3,7 +3,7 @@ package teff
 import (
 	"bytes"
 	"fmt"
-	"h12.me/teff/core"
+	"h12.io/teff/core"
 	"io"
 	"reflect"
 	"strconv"

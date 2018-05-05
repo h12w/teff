@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"h12.me/gspec"
+	"h12.io/gspec"
 )
 
 func init() {
